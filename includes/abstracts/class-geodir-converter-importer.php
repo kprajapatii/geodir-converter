@@ -263,7 +263,7 @@ abstract class GeoDir_Converter_Importer {
 		aui()->alert(
 			array(
 				'type'    => 'info',
-				'heading' => esc_html__( sprintf( 'The %1$s plugin is not active.', $plugin_name ), 'geodir-converter' ),
+				'heading' => sprintf( esc_html__( 'The %1$s plugin is not active.', 'geodir-converter' ), $plugin_name ),
 				'content' => sprintf(
 					esc_html__(
 						'%1$s will not be imported unless you %2$sinstall and activate the %3$s plugin%4$s first.',
