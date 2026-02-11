@@ -165,7 +165,6 @@
             formData.append('importerId', importerId);
             formData.append('settings', JSON.stringify(settings));
 
-            // Handle files
             if (files.length > 0) {
                 for (let i = 0; i < files.length; i++) {
                     formData.append('files[]', files[i]);
@@ -299,37 +298,41 @@
         init: function (el) {
             var self = this;
             this.element = el;
+
+            if (!this.element.length || !this.element[0]) {
+                return this;
+            }
+
             this.element.scrollTop(this.element[0].scrollHeight);
 
-            // Track user interaction with the logs
-            this.element.on('mouseenter', function() {
+            this.element.on('mouseenter', function () {
                 self.userInteracting = true;
             });
 
-            this.element.on('mouseleave', function() {
-                // Delay before resuming auto-scroll to allow user to move mouse away
+            this.element.on('mouseleave', function () {
                 clearTimeout(self.interactionTimeout);
-                self.interactionTimeout = setTimeout(function() {
+                self.interactionTimeout = setTimeout(function () {
                     self.userInteracting = false;
                 }, 1000);
             });
 
-            this.element.on('wheel scroll touchstart', function() {
+            this.element.on('wheel scroll touchstart', function () {
+                if (!self.element.length || !self.element[0]) {
+                    return;
+                }
+
                 self.userInteracting = true;
                 clearTimeout(self.interactionTimeout);
-                
-                // Check if user has scrolled to bottom
+
                 var element = self.element[0];
                 var isAtBottom = Math.abs(element.scrollHeight - element.clientHeight - element.scrollTop) < 5;
-                
+
                 if (isAtBottom) {
-                    // User scrolled back to bottom, resume auto-scroll
-                    self.interactionTimeout = setTimeout(function() {
+                    self.interactionTimeout = setTimeout(function () {
                         self.userInteracting = false;
                     }, 500);
                 } else {
-                    // User is viewing older logs, keep interaction flag set
-                    self.interactionTimeout = setTimeout(function() {
+                    self.interactionTimeout = setTimeout(function () {
                         self.userInteracting = false;
                     }, 3000);
                 }
@@ -344,9 +347,12 @@
          * @param {string} logs - Logs to insert.
          */
         insertLogs: function (logs) {
+            if (!this.element.length || !this.element[0]) {
+                return;
+            }
+
             this.element.append(logs);
-            
-            // Only auto-scroll if user is not interacting
+
             if (!this.userInteracting) {
                 this.element.scrollTop(this.element[0].scrollHeight);
             }
@@ -368,7 +374,9 @@
             this.shown = 0;
             this.userInteracting = false;
             clearTimeout(this.interactionTimeout);
-            this.element.html('');
+            if (this.element.length) {
+                this.element.html('');
+            }
         },
 
     });
@@ -476,34 +484,28 @@
 
             const self = this;
 
-            // Disable step 2 inputs.
             this.disableStep2Inputs(true);
 
-            // Button click triggers file input.
             this.btn.on('click', function () {
                 self.input.trigger('click');
             });
 
-            // Handle dragover
             this.dropzone.on('dragover dragenter', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 self.dropzone.addClass('dragover');
             });
 
-            // Handle dragleave/drop
             this.dropzone.on('dragleave dragend drop', function (e) {
                 e.preventDefault();
                 e.stopPropagation();
                 self.dropzone.removeClass('dragover');
             });
 
-            // Drop files
             this.dropzone.on('drop', function (e) {
                 self.handleFiles(e.originalEvent.dataTransfer.files);
             });
 
-            // File input change
             this.input.on('change', function (e) {
                 e.preventDefault();
                 self.handleFiles(this.files);
@@ -519,9 +521,12 @@
          */
         handleFiles: function (files) {
             const self = this;
+            const importerId = this.converter ? this.converter.importerId : 'edirectory';
+            const isCSV = importerId === 'csv';
 
             Array.from(files).forEach(function (file) {
-                if (file.name.toLowerCase().endsWith('.csv')) {
+                const isCSVFile = file.name.toLowerCase().endsWith('.csv') || file.name.toLowerCase().endsWith('.txt');
+                if (isCSVFile || !isCSV) {
                     self.uploadFile(file);
                 } else {
                     aui_toast("geodir_converter_error", "error", `${file.name} is not a CSV file.`);
@@ -532,63 +537,160 @@
         /**
          * Uploads a single file.
          *
-         * @param {File} file
+         * @param {File} file - The file to upload.
+         * @returns {void}
          */
         uploadFile: function (file) {
-            const self = this;
+            const importerId = this.converter ? this.converter.importerId : 'edirectory';
+            const uploadContext = this._createUploadContext(file, importerId);
+
+            if (importerId === 'csv') {
+                this._uploadCSVFile(uploadContext);
+            } else {
+                this._uploadEDirectoryFile(uploadContext);
+            }
+        },
+
+        /**
+         * Creates upload context object with UI elements and progress tracking.
+         *
+         * @private
+         * @param {File} file - The file being uploaded.
+         * @param {string} importerId - The importer identifier.
+         * @returns {Object} Upload context object.
+         */
+        _createUploadContext: function (file, importerId) {
             const fileId = 'upload-' + Date.now();
             const item = this.renderUploadItem(fileId, file.name);
             const progressBar = $.extend({}, GeoDir_Converter.ProgressBar);
             const progress = progressBar.init(item.find('.progress'));
-            const status = item.find('.geodir-converter-progress-status');
-            const icon = item.find('.geodir-converter-progress-icon');
+
+            return {
+                file: file,
+                fileId: fileId,
+                item: item,
+                progress: progress,
+                status: item.find('.geodir-converter-progress-status'),
+                icon: item.find('.geodir-converter-progress-icon'),
+                importerId: importerId
+            };
+        },
+
+        /**
+         * Handles CSV file upload.
+         *
+         * @private
+         * @param {Object} context - Upload context object.
+         * @returns {void}
+         */
+        _uploadCSVFile: function (context) {
+            const self = this;
+            const formData = this._buildCSVFormData(context.file);
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.csv_parse, function (success, data) {
+                self._handleUploadResponse(success, data, context, function () {
+                    if (data.file_id) {
+                        const delimiter = self.element.find('#csv_delimiter').val() || ',';
+                        self.converter.switchToCSVMappingStep({
+                            file_id: data.file_id,
+                            delimiter: delimiter,
+                            headers: data.headers || []
+                        });
+                    }
+                });
+            }, formData, this._getUploadAjaxOptions(context));
+        },
+
+        /**
+         * Handles eDirectory file upload.
+         *
+         * @private
+         * @param {Object} context - Upload context object.
+         * @returns {void}
+         */
+        _uploadEDirectoryFile: function (context) {
+            const self = this;
+            const formData = this._buildEDirectoryFormData(context.file, context.importerId);
             const $moduleTypes = this.element.find('[name="edirectory_modules[]"]');
 
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.upload, function (success, data) {
+                self._handleUploadResponse(success, data, context, function () {
+                    if (data.module_type) {
+                        const selected = $moduleTypes.map(function () {
+                            return $(this).val();
+                        }).get();
+
+                        if (!selected.includes(data.module_type)) {
+                            selected.push(data.module_type);
+                            $moduleTypes.remove();
+
+                            const hiddenInputs = selected.map(function (val) {
+                                return '<input type="hidden" name="edirectory_modules[]" value="' + val + '">';
+                            }).join('');
+
+                            self.element.append(hiddenInputs);
+                        }
+                    }
+                });
+            }, formData, this._getUploadAjaxOptions(context));
+        },
+
+        /**
+         * Builds FormData for CSV upload.
+         *
+         * @private
+         * @param {File} file - The file to upload.
+         * @returns {FormData} FormData object for CSV upload.
+         */
+        _buildCSVFormData: function (file) {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('importerId', 'edirectory');
+            formData.append('importerId', 'csv');
 
-            GeoDir_Converter.ajax(GeoDir_Converter.actions.upload, function (success, data) {
-                progress.barEl.removeClass('progress-bar-animated');
-                icon.removeClass('fa-sync');
+            const delimiter = this.element.find('#csv_delimiter').val() || ',';
+            formData.append('csv_delimiter', delimiter);
 
-                if (success) {
-                    progress.barEl.addClass('bg-success');
-                    icon.addClass('fa-check text-success');
-                    status.text(data.message);
+            const postType = this.element.find('select[name="gd_post_type"]').val();
+            if (postType) {
+                formData.append('gd_post_type', postType);
+            }
 
-                    if (!self.converter.files.some(f => f.name === file.name && f.size === file.size && f.lastModified === file.lastModified)) {
-                        self.converter.files.push(file);
-                    }
+            return formData;
+        },
 
-                    const selected = $moduleTypes.map(function () {
-                        return $(this).val();
-                    }).get();
+        /**
+         * Builds FormData for eDirectory upload.
+         *
+         * @private
+         * @param {File} file - The file to upload.
+         * @param {string} importerId - The importer identifier.
+         * @returns {FormData} FormData object for eDirectory upload.
+         */
+        _buildEDirectoryFormData: function (file, importerId) {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('importerId', importerId);
+            return formData;
+        },
 
-                    if (data.module_type && !selected.includes(data.module_type)) {
-                        selected.push(data.module_type);
-                        $moduleTypes.remove();
+        /**
+         * Gets AJAX options for file upload with progress tracking.
+         *
+         * @private
+         * @param {Object} context - Upload context object.
+         * @returns {Object} AJAX options object.
+         */
+        _getUploadAjaxOptions: function (context) {
+            const self = this;
+            const progress = context.progress;
+            const icon = context.icon;
+            const status = context.status;
 
-                        const hiddenInputs = selected.map(val =>
-                            `<input type="hidden" name="edirectory_modules[]" value="${val}">`
-                        ).join('');
-
-                        self.element.append(hiddenInputs);
-                    }
-
-                    // Enable step 2 inputs.
-                    self.disableStep2Inputs(false);
-                } else {
-                    progress.barEl.addClass('bg-danger');
-                    icon.addClass('fa-triangle-exclamation text-danger');
-                    status.text(`Upload failed: ${data.message}`);
-                    self.disableStep2Inputs(true);
-                }
-            }, formData, {
+            return {
                 method: 'POST',
                 xhr: function () {
                     const xhr = new window.XMLHttpRequest();
-                    xhr.upload.addEventListener("progress", function (evt) {
+                    xhr.upload.addEventListener('progress', function (evt) {
                         if (evt.lengthComputable) {
                             const percent = Math.round((evt.loaded / evt.total) * 100);
                             progress.updateProgress(percent);
@@ -599,10 +701,53 @@
                 error: function () {
                     progress.barEl.removeClass('progress-bar-animated').addClass('bg-danger');
                     icon.removeClass('fa-sync').addClass('fa-triangle-exclamation text-danger');
-                    status.text('Server error during upload.');
+                    status.text(GeoDir_Converter.i18n.serverErrorUpload);
                     self.disableStep2Inputs(true);
                 }
-            });
+            };
+        },
+
+        /**
+         * Handles upload response and updates UI accordingly.
+         *
+         * @private
+         * @param {boolean} success - Whether the upload was successful.
+         * @param {Object} data - Response data from server.
+         * @param {Object} context - Upload context object.
+         * @param {Function} onSuccessCallback - Callback to execute on success.
+         * @returns {void}
+         */
+        _handleUploadResponse: function (success, data, context, onSuccessCallback) {
+            const progress = context.progress;
+            const icon = context.icon;
+            const status = context.status;
+            const file = context.file;
+
+            progress.barEl.removeClass('progress-bar-animated');
+            icon.removeClass('fa-sync');
+
+            if (success) {
+                progress.barEl.addClass('bg-success');
+                icon.addClass('fa-check text-success');
+                status.text(data.message || GeoDir_Converter.i18n.fileUploadSuccess);
+
+                if (!this.converter.files.some(function (f) {
+                    return f.name === file.name && f.size === file.size && f.lastModified === file.lastModified;
+                })) {
+                    this.converter.files.push(file);
+                }
+
+                if (onSuccessCallback) {
+                    onSuccessCallback();
+                }
+
+                this.disableStep2Inputs(false);
+            } else {
+                progress.barEl.addClass('bg-danger');
+                icon.addClass('fa-triangle-exclamation text-danger');
+                status.text(GeoDir_Converter.i18n.uploadFailed + (data.message || GeoDir_Converter.i18n.unknownError));
+                this.disableStep2Inputs(true);
+            }
         },
 
         /**
@@ -611,8 +756,12 @@
          * @param {boolean} disabled
          */
         disableStep2Inputs: function (disabled) {
-            this.element.find('.geodir-converter-configure-wrapper').find('input, select, textarea, button').not('[name="edirectory_modules[]"]').prop('disabled', disabled);
+            const configureWrapper = this.element.find('.geodir-converter-configure-wrapper');
+            if (configureWrapper.length) {
+                configureWrapper.find('input, select, textarea, button').not('[name="edirectory_modules[]"]').prop('disabled', disabled);
+            }
         },
+
 
         /**
          * Renders an upload item.
@@ -720,16 +869,89 @@
                 converter: this
             });
 
-            let dropZone = $.extend({}, GeoDir_Converter.DropZone);
-            this.dropZone = dropZone.init(this.element.find('.geodir-converter-connect-wrapper'), {
-                converter: this
-            });
+            const connectWrapper = this.element.find('.geodir-converter-connect-wrapper');
+            if (connectWrapper.length) {
+                let dropZone = $.extend({}, GeoDir_Converter.DropZone);
+                this.dropZone = dropZone.init(connectWrapper, {
+                    converter: this
+                });
+            }
 
             if (this.inProgress) {
                 this.start();
             }
 
+            this.element.data('converter', this);
+
             return this;
+        },
+
+        /**
+         * Switches to CSV mapping step dynamically.
+         *
+         * @param {Object} data - Response data containing file_id, delimiter, and headers.
+         * @param {number} data.file_id - The uploaded CSV file attachment ID.
+         * @param {string} [data.delimiter=','] - The CSV delimiter used.
+         * @param {Array} [data.headers=[]] - Array of CSV column headers.
+         * @returns {void}
+         */
+        switchToCSVMappingStep: function (data) {
+            const form = this.element.find('.geodir-converter-csv-form');
+            if (!form.length) {
+                return;
+            }
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.csv_get_mapping_step, function (success, responseData) {
+                if (!success) {
+                    alert(responseData.message || GeoDir_Converter.i18n.failedLoadMapping);
+                    return;
+                }
+
+                const $responseForm = $(responseData.html);
+                form.html($responseForm.html());
+                this._initializeMappingStepButtons(form);
+            }.bind(this), {
+                file_id: data.file_id,
+                delimiter: data.delimiter || ','
+            }, {
+                method: 'POST'
+            });
+        },
+
+        /**
+         * Initializes buttons and Select2 in the mapping step.
+         *
+         * @private
+         * @param {jQuery} container - The container element (form or mapping step).
+         * @returns {void}
+         */
+        _initializeMappingStepButtons: function (container) {
+            const importBtn = container.find('.geodir-converter-import');
+            const abortBtn = container.find('.geodir-converter-abort');
+            
+            if (typeof aui_init_select2 === 'function') {
+                aui_init_select2();
+            }
+
+            if (importBtn.length) {
+                const importButton = $.extend({}, GeoDir_Converter.ImportButton);
+                this.importButton = importButton.init(importBtn, {
+                    defaultText: GeoDir_Converter.i18n.import,
+                    actionText: GeoDir_Converter.i18n.importing,
+                    ajaxAction: GeoDir_Converter.actions.import,
+                    converter: this
+                });
+            }
+
+            if (abortBtn.length) {
+                const abortButton = $.extend({}, GeoDir_Converter.AbortButton);
+                this.abortButton = abortButton.init(abortBtn, {
+                    defaultText: GeoDir_Converter.i18n.abort,
+                    actionText: GeoDir_Converter.i18n.aborting,
+                    ajaxAction: GeoDir_Converter.actions.abort,
+                    converter: this
+                });
+            }
         },
 
         /**
@@ -786,7 +1008,7 @@
                 self.logsHandler.setShown(data.logsShown);
                 self.logsHandler.insertLogs(data.logs);
 
-                if(self.dropZone.btn) {
+                if (self.dropZone && self.dropZone.btn) {
                     self.dropZone.btn.prop('disabled', data.inProgress);
                 }
 
@@ -819,6 +1041,400 @@
         }
     };
 
+    /**
+     * CSV Importer Handler.
+     *
+     * @type {Object}
+     */
+    GeoDir_Converter.CSVImporter = {
+        init: function () {
+            const self = this;
+            const csvForm = $('.geodir-converter-csv-form');
+
+            if (!csvForm.length) {
+                return;
+            }
+
+            if (typeof aui_init_select2 === 'function') {
+                aui_init_select2();
+            }
+
+            $(document).on('click', '.geodir-converter-csv-back', function (e) {
+                e.preventDefault();
+                self.goBack();
+            });
+
+            $(document).on('click', '.geodir-converter-refresh-fields', function (e) {
+                e.preventDefault();
+                self.refreshFields();
+            });
+
+            $(document).on('change', '.geodir-converter-csv-form select[name="gd_post_type"]', function () {
+                self.refreshFields();
+            });
+
+            $(document).on('click', '.geodir-converter-save-template', function (e) {
+                e.preventDefault();
+                self.saveTemplate();
+            });
+
+            $(document).on('click', '.geodir-converter-load-template', function (e) {
+                e.preventDefault();
+                self.loadTemplate();
+            });
+
+            $(document).on('click', '.geodir-converter-delete-template', function (e) {
+                e.preventDefault();
+                self.deleteTemplate();
+            });
+        },
+
+        /**
+         * Refreshes the mapping fields table.
+         *
+         * @returns {void}
+         */
+        refreshFields: function () {
+            const form = $('.geodir-converter-csv-form');
+            const postType = form.find('select[name="gd_post_type"]').val();
+            const wrapper = $('#geodir-converter-csv-mapping-wrapper');
+            const btn = $('.geodir-converter-refresh-fields');
+
+            if (!postType) {
+                return;
+            }
+
+            btn.prop('disabled', true).find('i').addClass('fa-spin');
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.csv_refresh_fields, function (success, data) {
+                btn.prop('disabled', false).find('i').removeClass('fa-spin');
+
+                if (success) {
+                    wrapper.html(data.html);
+                    if (typeof aui_init_select2 === 'function') {
+                        aui_init_select2();
+                    }
+                } else {
+                    wrapper.html('<div class="alert alert-danger">' + (data.message || GeoDir_Converter.i18n.failedRefreshFields) + '</div>');
+                }
+            }, {
+                gd_post_type: postType
+            }, {
+                method: 'POST'
+            });
+        },
+
+        /**
+         * Returns to the upload step from the mapping step.
+         *
+         * @returns {void}
+         */
+        goBack: function () {
+            const form = $('.geodir-converter-csv-form');
+            const converterElement = form.closest('.geodir-converter-importer');
+            const converter = converterElement.length ? converterElement.data('converter') : null;
+            const $backButton = $('.geodir-converter-csv-back');
+            const originalText = $backButton.html();
+            const originalDisabled = $backButton.prop('disabled');
+
+            $backButton.prop('disabled', true);
+            $backButton.html('<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>' + GeoDir_Converter.i18n.loading);
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.csv_clear_file, function (success, data) {
+                $backButton.prop('disabled', originalDisabled);
+                $backButton.html(originalText);
+
+                if (!success) {
+                    alert(data.message || GeoDir_Converter.i18n.failedClearFile);
+                    return;
+                }
+
+                const $responseForm = $(data.html);
+                form.html($responseForm.html());
+
+                if (converter) {
+                    const connectWrapper = form.find('.geodir-converter-connect-wrapper');
+                    if (connectWrapper.length) {
+                        const dropZone = $.extend({}, GeoDir_Converter.DropZone);
+                        converter.dropZone = dropZone.init(connectWrapper, {
+                            converter: converter
+                        });
+                    }
+                }
+
+                if (typeof aui_init_select2 === 'function') {
+                    aui_init_select2();
+                }
+            }, {}, {
+                method: 'POST'
+            });
+        },
+
+        /**
+         * Saves the current mapping as a template.
+         *
+         * @returns {void}
+         */
+        saveTemplate: function () {
+            const form = $('.geodir-converter-csv-form');
+            const templateNameInput = $('#csv_template_name');
+            const templateName = templateNameInput.val().trim();
+            const saveBtn = $('.geodir-converter-save-template');
+
+            if (!templateName) {
+                aui_toast('geodir_converter_error', 'error', GeoDir_Converter.i18n.templateNameRequired);
+                templateNameInput.focus();
+                return;
+            }
+
+            // Get all mapping values from the form.
+            const mapping = {};
+            form.find('select.geodir-converter-field-mapping').each(function () {
+                const $select = $(this);
+                const columnName = $select.attr('name').replace('csv_mapping[', '').replace(']', '');
+                const fieldValue = $select.val();
+                if (fieldValue) {
+                    mapping[columnName] = fieldValue;
+                }
+            });
+
+            if (Object.keys(mapping).length === 0) {
+                aui_toast('geodir_converter_error', 'error', GeoDir_Converter.i18n.templateMappingRequired);
+                return;
+            }
+
+            saveBtn.prop('disabled', true);
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.csv_save_template, function (success, data) {
+                saveBtn.prop('disabled', false);
+
+                if (success) {
+                    templateNameInput.val('');
+                    aui_toast('geodir_converter_success', 'success', data.message || GeoDir_Converter.i18n.templateSaved);
+                    // Refresh template list dynamically.
+                    self.refreshTemplateList(data.template_id, data.template_name);
+                } else {
+                    aui_toast('geodir_converter_error', 'error', data.message || GeoDir_Converter.i18n.templateSaveFailed);
+                }
+            }, {
+                template_name: templateName,
+                csv_mapping: mapping
+            }, {
+                method: 'POST'
+            });
+        },
+
+        /**
+         * Loads a saved mapping template.
+         *
+         * @returns {void}
+         */
+        loadTemplate: function () {
+            const templateSelect = $('#csv_template_select');
+            const templateId = templateSelect.val();
+            const loadBtn = $('.geodir-converter-load-template');
+
+            if (!templateId) {
+                aui_toast('geodir_converter_error', 'error', GeoDir_Converter.i18n.templateSelectRequired);
+                return;
+            }
+
+            loadBtn.prop('disabled', true);
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.csv_load_template, function (success, data) {
+                loadBtn.prop('disabled', false);
+
+                if (success) {
+                    const form = $('.geodir-converter-csv-form');
+                    const mapping = data.mapping || {};
+
+                    // Apply mapping to form selects.
+                    Object.keys(mapping).forEach(function (columnName) {
+                        const fieldValue = mapping[columnName];
+                        const $select = form.find('select[name="csv_mapping[' + columnName + ']"]');
+                        if ($select.length) {
+                            // Set the value
+                            $select.val(fieldValue);
+                            
+                            // Update Select2 if it's initialized
+                            if ($select.hasClass('select2-hidden-accessible')) {
+                                // Use Select2 API to update
+                                if ($select.data('select2')) {
+                                    $select.trigger('change.select2');
+                                } else {
+                                    $select.trigger('change');
+                                }
+                            } else {
+                                $select.trigger('change');
+                            }
+                        }
+                    });
+
+                    // Reinitialize Select2 to ensure all changes are reflected
+                    setTimeout(function() {
+                        if (typeof aui_init_select2 === 'function') {
+                            aui_init_select2();
+                        }
+                        // Also manually trigger change on all selects to update Select2
+                        form.find('.geodir-converter-field-mapping').each(function() {
+                            const $sel = $(this);
+                            if ($sel.hasClass('select2-hidden-accessible')) {
+                                $sel.trigger('change.select2');
+                            }
+                        });
+                    }, 150);
+
+                    aui_toast('geodir_converter_success', 'success', data.message || GeoDir_Converter.i18n.templateLoaded);
+                } else {
+                    aui_toast('geodir_converter_error', 'error', data.message || GeoDir_Converter.i18n.templateLoadFailed);
+                }
+            }, {
+                template_id: templateId
+            }, {
+                method: 'POST'
+            });
+        },
+
+        /**
+         * Deletes a saved mapping template.
+         *
+         * @returns {void}
+         */
+        deleteTemplate: function () {
+            const templateSelect = $('#csv_template_select');
+            const templateId = templateSelect.val();
+            const deleteBtn = $('.geodir-converter-delete-template');
+
+            if (!templateId) {
+                aui_toast('geodir_converter_error', 'error', GeoDir_Converter.i18n.templateSelectRequired);
+                return;
+            }
+
+            if (!confirm(GeoDir_Converter.i18n.templateDeleteConfirm)) {
+                return;
+            }
+
+            deleteBtn.prop('disabled', true);
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.csv_delete_template, function (success, data) {
+                deleteBtn.prop('disabled', false);
+
+                if (success) {
+                    const templateName = templateSelect.find('option[value="' + templateId + '"]').data('name') || '';
+                    templateSelect.val('').find('option[value="' + templateId + '"]').remove();
+                    
+                    // If no templates left, hide the load section.
+                    if (templateSelect.find('option').length <= 1) {
+                        self.hideTemplateLoadSection();
+                    }
+                    
+                    aui_toast('geodir_converter_success', 'success', data.message || GeoDir_Converter.i18n.templateDeleted);
+                } else {
+                    aui_toast('geodir_converter_error', 'error', data.message || GeoDir_Converter.i18n.templateDeleteFailed);
+                }
+            }, {
+                template_id: templateId
+            }, {
+                method: 'POST'
+            });
+        },
+
+        /**
+         * Refreshes the template dropdown list.
+         *
+         * @param {string} newTemplateId - The ID of the newly added template.
+         * @param {string} newTemplateName - The name of the newly added template.
+         * @returns {void}
+         */
+        refreshTemplateList: function (newTemplateId, newTemplateName) {
+            let templateSelect = $('#csv_template_select');
+            const templatesSection = $('.geodir-converter-templates-section');
+            const row = templatesSection.find('.row');
+            let loadSection = $('.geodir-converter-template-load-section');
+            
+            // If load section doesn't exist, create it.
+            if (!loadSection.length) {
+                const saveSection = $('.geodir-converter-template-save-section');
+                
+                // Create the load section HTML
+                const loadSectionHtml = $('<div>', {
+                    class: 'col-md-6 geodir-converter-template-load-section',
+                    html: '<label class="form-label mb-2">' + GeoDir_Converter.i18n.loadTemplate + '</label>' +
+                          '<div class="input-group">' +
+                          '<select class="form-select form-select-sm" id="csv_template_select">' +
+                          '<option value="">' + GeoDir_Converter.i18n.chooseTemplate + '</option>' +
+                          '</select>' +
+                          '<button type="button" class="btn btn-sm btn-primary geodir-converter-load-template" title="' + GeoDir_Converter.i18n.loadSelectedTemplate + '">' +
+                          '<i class="fas fa-arrow-down"></i>' +
+                          '</button>' +
+                          '<button type="button" class="btn btn-sm btn-outline-danger geodir-converter-delete-template" title="' + GeoDir_Converter.i18n.deleteSelectedTemplate + '">' +
+                          '<i class="fas fa-trash-alt"></i>' +
+                          '</button>' +
+                          '</div>'
+                });
+                
+                // Insert before save section
+                if (saveSection.length) {
+                    saveSection.before(loadSectionHtml);
+                    saveSection.removeClass('col-12').addClass('col-md-6');
+                } else {
+                    row.prepend(loadSectionHtml);
+                }
+                
+                // Re-select the element
+                templateSelect = $('#csv_template_select');
+                loadSection = $('.geodir-converter-template-load-section');
+            } else if (loadSection.hasClass('d-none')) {
+                // If load section is hidden, show it.
+                loadSection.removeClass('d-none');
+                // Adjust save section to col-md-6 if it was col-12.
+                const saveSection = $('.geodir-converter-template-save-section');
+                if (saveSection.length) {
+                    saveSection.removeClass('col-12').addClass('col-md-6');
+                }
+            }
+            
+            // Add new template option if provided.
+            if (newTemplateId && newTemplateName) {
+                const newOption = $('<option>', {
+                    value: newTemplateId,
+                    text: newTemplateName,
+                    'data-name': newTemplateName
+                });
+                templateSelect.append(newOption);
+                templateSelect.val(newTemplateId);
+                
+                // Update Select2 if it's initialized
+                if (templateSelect.hasClass('select2-hidden-accessible')) {
+                    templateSelect.trigger('change.select2');
+                }
+            }
+            
+            // Reinitialize Select2 if available.
+            if (typeof aui_init_select2 === 'function') {
+                aui_init_select2();
+            }
+        },
+
+        /**
+         * Hides the template load section when no templates exist.
+         *
+         * @returns {void}
+         */
+        hideTemplateLoadSection: function () {
+            const loadSection = $('.geodir-converter-template-load-section');
+            
+            if (loadSection.length) {
+                loadSection.addClass('d-none');
+                // Expand save section to full width.
+                const saveSection = $('.geodir-converter-template-save-section');
+                if (saveSection.length) {
+                    saveSection.removeClass('col-md-6').addClass('col-12');
+                }
+            }
+        }
+    };
+
     $(function () {
         const importers = $('.geodir-converter-importer');
         importers.each(function () {
@@ -827,21 +1443,31 @@
                 inProgress: Boolean($(this).data('progress'))
             });
         });
+
+        GeoDir_Converter.CSVImporter.init();
     });
 
+    /**
+     * Serializes a form to an object.
+     *
+     * @returns {Object} The serialized object.
+     */
     $.fn.serializeObject = function () {
-        var o = {};
-        var a = this.serializeArray();
+        let o = {};
+        let a = this.serializeArray();
         $.each(a, function () {
-            var name = this.name.replace(/\[\]$/, '');
+            let name = this.name.replace(/\[\]$/, '');
+            let value = this.value || '';
 
-            if (o[name]) {
-                if (!Array.isArray(o[name])) {
-                    o[name] = [o[name]];
-                }
-                o[name].push(this.value || '');
+            if (name.indexOf('[') > -1) {
+                let parts = name.split('[');
+                let root = parts[0];
+                let key = parts[1].replace(/\]$/, '');
+
+                o[root] = o[root] || {};
+                o[root][key] = value;
             } else {
-                o[name] = this.value || '';
+                o[name] = value;
             }
         });
         return o;

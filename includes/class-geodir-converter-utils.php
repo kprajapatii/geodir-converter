@@ -155,15 +155,24 @@ class GeoDir_Converter_Utils {
 	 *
 	 * @param string $file_path The path to the CSV file.
 	 * @param array  $required_headers The required headers.
+	 * @param string $delimiter CSV delimiter. Default ','.
 	 * @return array|WP_Error An array of parsed rows or a WP_Error object on failure.
+	 *
+	 * @throws WP_Error|Exception If the CSV file is not found, not readable, has invalid headers, or contains no valid data rows or an error occurs while parsing the CSV file.
 	 */
-	public static function parse_csv( $file_path, $required_headers = array() ) {
+	public static function parse_csv( $file_path, $required_headers = array(), $delimiter = ',' ) {
 		if ( ! file_exists( $file_path ) ) {
 			return new WP_Error( 'file_not_found', __( 'CSV file not found.', 'geodir-converter' ) );
 		}
 
 		if ( ! is_readable( $file_path ) ) {
 			return new WP_Error( 'file_not_readable', __( 'CSV file is not readable. Please check file permissions.', 'geodir-converter' ) );
+		}
+
+		// Validate delimiter.
+		$delimiter = ! empty( $delimiter ) ? $delimiter : ',';
+		if ( strlen( $delimiter ) > 1 ) {
+			$delimiter = ',';
 		}
 
 		$data            = array();
@@ -173,7 +182,7 @@ class GeoDir_Converter_Utils {
 		try {
 			if ( ( $handle = fopen( $file_path, 'r' ) ) !== false ) {
 				// Get headers.
-				$headers = fgetcsv( $handle, 0, ',' );
+				$headers = fgetcsv( $handle, 0, $delimiter );
 				++$line_number;
 
 				if ( empty( $headers ) || ! is_array( $headers ) ) {
@@ -214,7 +223,7 @@ class GeoDir_Converter_Utils {
 				}
 
 				// Process rows.
-				while ( ( $row = fgetcsv( $handle, 0, ',' ) ) !== false ) {
+				while ( ( $row = fgetcsv( $handle, 0, $delimiter ) ) !== false ) {
 					++$line_number;
 
 					// Skip empty rows.
@@ -247,8 +256,8 @@ class GeoDir_Converter_Utils {
 					// Sanitize and validate row data.
 					$sanitized_row = array();
 					foreach ( array_combine( $headers, $row ) as $key => $value ) {
-						// Basic sanitization.
-						$value = sanitize_text_field( $value );
+						// Use sanitize_textarea_field to preserve newlines for multiselect fields.
+						$value = sanitize_textarea_field( $value );
 
 						// Field-specific validation could be added here.
 						$sanitized_row[ $key ] = $value;

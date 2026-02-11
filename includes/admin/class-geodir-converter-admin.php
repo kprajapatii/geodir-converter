@@ -67,7 +67,8 @@ class GeoDir_Converter_Admin {
 	/**
 	 * Register admin scripts
 	 *
-	 * @param string $hook
+	 * @param string $hook The current admin page hook.
+	 * @return void
 	 */
 	public function enqueue_scripts( $hook ) {
 		if ( 'tools_page_geodir-converter' !== $hook ) {
@@ -78,6 +79,8 @@ class GeoDir_Converter_Admin {
 		$suffix         = GeoDir_Converter::instance()->get_script_suffix();
 		$nonces         = GeoDir_Converter_Ajax::instance()->get_nonces();
 
+		wp_enqueue_style( 'geodir-converter-admin', GEODIR_CONVERTER_PLUGIN_URL . "assets/css/admin{$suffix}.css", array(), $script_version );
+
 		wp_enqueue_script( 'geodir-converter-admin', GEODIR_CONVERTER_PLUGIN_URL . "assets/js/admin{$suffix}.js", array( 'jquery' ), $script_version, true );
 		wp_localize_script(
 			'geodir-converter-admin',
@@ -86,35 +89,56 @@ class GeoDir_Converter_Admin {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonces'  => $nonces,
 				'actions' => array(
-					'import'   => 'geodir_converter_import',
-					'progress' => 'geodir_converter_progress',
-					'abort'    => 'geodir_converter_abort',
-					'upload'   => 'geodir_converter_upload',
+					'import'               => 'geodir_converter_import',
+					'progress'             => 'geodir_converter_progress',
+					'abort'                => 'geodir_converter_abort',
+					'upload'               => 'geodir_converter_upload',
+					'csv_parse'            => 'geodir_converter_csv_parse',
+					'csv_get_fields'       => 'geodir_converter_csv_get_fields',
+					'csv_refresh_fields'   => 'geodir_converter_csv_refresh_fields',
+					'csv_get_mapping_step' => 'geodir_converter_csv_get_mapping_step',
+					'csv_clear_file'       => 'geodir_converter_csv_clear_file',
+					'csv_save_template'    => 'geodir_converter_csv_save_template',
+					'csv_load_template'    => 'geodir_converter_csv_load_template',
+					'csv_delete_template'  => 'geodir_converter_csv_delete_template',
 				),
 				'i18n'    => array(
-					'selectImport' => __( 'I want to import listings from:', 'geodir-converter' ),
-					'importSource' => __( 'Import listings from:', 'geodir-converter' ),
-					'runConverter' => __( 'Run Converter', 'geodir-converter' ),
-					'loading'      => __( 'Loading...', 'geodir-converter' ),
-					'import'       => __( 'Start Import', 'geodir-converter' ),
-					'importing'    => __( 'Importing...', 'geodir-converter' ),
-					'abort'        => __( 'Abort', 'geodir-converter' ),
-					'aborting'     => __( 'Aborting...', 'geodir-converter' ),
-					'uploading'    => __( 'Uploading...', 'geodir-converter' ),
+					'selectImport'            => __( 'I want to import listings from:', 'geodir-converter' ),
+					'importSource'            => __( 'Import listings from:', 'geodir-converter' ),
+					'runConverter'            => __( 'Run Converter', 'geodir-converter' ),
+					'loading'                 => __( 'Loading...', 'geodir-converter' ),
+					'import'                  => __( 'Start Import', 'geodir-converter' ),
+					'importing'               => __( 'Importing...', 'geodir-converter' ),
+					'abort'                   => __( 'Abort', 'geodir-converter' ),
+					'aborting'                => __( 'Aborting...', 'geodir-converter' ),
+					'uploading'               => __( 'Uploading...', 'geodir-converter' ),
+					'selectField'             => __( 'Select a field...', 'geodir-converter' ),
+					'failedLoadMapping'       => __( 'Failed to load mapping step.', 'geodir-converter' ),
+					'failedRefreshFields'     => __( 'Failed to refresh fields.', 'geodir-converter' ),
+					'failedClearFile'         => __( 'Failed to clear file. Please refresh the page.', 'geodir-converter' ),
+					'fileUploadSuccess'       => __( 'File uploaded successfully', 'geodir-converter' ),
+					'uploadFailed'            => __( 'Upload failed: ', 'geodir-converter' ),
+					'unknownError'            => __( 'Unknown error', 'geodir-converter' ),
+					'serverErrorUpload'       => __( 'Server error during upload.', 'geodir-converter' ),
+					'templateNameRequired'    => __( 'Template name is required.', 'geodir-converter' ),
+					'templateMappingRequired' => __( 'Please map at least one field before saving.', 'geodir-converter' ),
+					'templateSaved'           => __( 'Template saved successfully.', 'geodir-converter' ),
+					'templateSaveFailed'      => __( 'Failed to save template.', 'geodir-converter' ),
+					'templateSelectRequired'  => __( 'Please select a template.', 'geodir-converter' ),
+					'templateLoaded'          => __( 'Template loaded successfully.', 'geodir-converter' ),
+					'templateLoadFailed'      => __( 'Failed to load template.', 'geodir-converter' ),
+					'templateDeleted'         => __( 'Template deleted successfully.', 'geodir-converter' ),
+					'templateDeleteFailed'    => __( 'Failed to delete template.', 'geodir-converter' ),
+					'templateDeleteConfirm'   => __( 'Are you sure you want to delete this template?', 'geodir-converter' ),
+					'loadTemplate'            => __( 'Load Template', 'geodir-converter' ),
+					'saveCurrentMapping'      => __( 'Save Current Mapping', 'geodir-converter' ),
+					'chooseTemplate'          => __( 'Choose a saved template...', 'geodir-converter' ),
+					'loadSelectedTemplate'    => __( 'Load selected template', 'geodir-converter' ),
+					'deleteSelectedTemplate'  => __( 'Delete selected template', 'geodir-converter' ),
+					'enterTemplateName'       => __( 'Enter template name...', 'geodir-converter' ),
+					'save'                    => __( 'Save', 'geodir-converter' ),
 				),
 			)
-		);
-
-		wp_register_style( 'geodir-converter-admin', false );
-		wp_enqueue_style( 'geodir-converter-admin' );
-
-		wp_add_inline_style(
-			'geodir-converter-admin',
-			'.geodir-converter-wrapper { max-width: 700px; }
-            .geodir-converter-icon { display: block; width: 50px; height: 50px; object-fit: cover; }
-            .geodir-converter-importer-error h1 { line-height: 1.4; font-size: 1.125rem; }
-            .geodir-converter-wrapper .alert .alert-heading { font-size: 16px; margin-bottom: 10px; }
-            .geodir-converter-logs { max-height: 400px; overflow-y: auto; }'
 		);
 	}
 

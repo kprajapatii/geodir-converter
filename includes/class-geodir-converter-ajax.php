@@ -43,16 +43,40 @@ class GeoDir_Converter_Ajax {
 	 * @var array
 	 */
 	protected $ajax_actions = array(
-		'progress' => array(
+		'progress'             => array(
 			'method' => 'GET',
 		),
-		'import'   => array(
+		'import'               => array(
 			'method' => 'POST',
 		),
-		'abort'    => array(
+		'abort'                => array(
 			'method' => 'POST',
 		),
-		'upload'   => array(
+		'upload'               => array(
+			'method' => 'POST',
+		),
+		'csv_parse'            => array(
+			'method' => 'POST',
+		),
+		'csv_get_fields'       => array(
+			'method' => 'POST',
+		),
+		'csv_refresh_fields'   => array(
+			'method' => 'POST',
+		),
+		'csv_get_mapping_step' => array(
+			'method' => 'POST',
+		),
+		'csv_clear_file'       => array(
+			'method' => 'POST',
+		),
+		'csv_save_template'    => array(
+			'method' => 'POST',
+		),
+		'csv_load_template'    => array(
+			'method' => 'POST',
+		),
+		'csv_delete_template'  => array(
 			'method' => 'POST',
 		),
 	);
@@ -398,5 +422,354 @@ class GeoDir_Converter_Ajax {
 		$importer->background_process->abort();
 
 		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX handler for parsing CSV file.
+	 *
+	 * @since 2.3.0
+	 * @return void
+	 */
+	public function csv_parse() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		if ( ! isset( $_FILES['file'] ) || ! isset( $_FILES['file']['error'] ) || UPLOAD_ERR_OK !== $_FILES['file']['error'] ) {
+			$this->send_json_error( __( 'No file uploaded or upload error.', 'geodir-converter' ) );
+		}
+
+		$delimiter = isset( $_POST['csv_delimiter'] ) ? sanitize_text_field( wp_unslash( $_POST['csv_delimiter'] ) ) : ',';
+		if ( empty( $delimiter ) || strlen( $delimiter ) > 1 ) {
+			$delimiter = ',';
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		$upload = wp_handle_upload( $_FILES['file'], array( 'test_form' => false ) );
+
+		if ( isset( $upload['error'] ) ) {
+			$this->send_json_error( $upload['error'] );
+		}
+
+		$file_name  = isset( $_FILES['file']['name'] ) ? sanitize_file_name( $_FILES['file']['name'] ) : 'import.csv';
+		$attachment = array(
+			'post_mime_type' => 'text/csv',
+			'post_title'     => $file_name,
+			'post_content'   => '',
+			'post_status'    => 'inherit',
+		);
+
+		$attach_id = wp_insert_attachment( $attachment, $upload['file'] );
+		if ( is_wp_error( $attach_id ) ) {
+			$this->send_json_error( $attach_id->get_error_message() );
+		}
+
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		wp_update_attachment_metadata( $attach_id, wp_generate_attachment_metadata( $attach_id, $upload['file'] ) );
+
+		$csv_importer = $this->get_importer( 'csv' );
+		if ( is_wp_error( $csv_importer ) ) {
+			wp_delete_attachment( $attach_id, true );
+			$this->send_json_error( $csv_importer->get_error_message() );
+		}
+
+		$headers = $csv_importer->get_csv_headers( $upload['file'], $delimiter );
+		if ( is_wp_error( $headers ) ) {
+			wp_delete_attachment( $attach_id, true );
+			$this->send_json_error( $headers->get_error_message() );
+		}
+
+		$sample_data = $csv_importer->get_csv_sample_data( $upload['file'], $delimiter, $headers );
+		$total_rows  = $csv_importer->count_csv_rows( $upload['file'], $delimiter );
+
+		$existing_settings = $csv_importer->options_handler->get_option( 'import_settings', array() );
+		$gd_post_type      = isset( $_POST['gd_post_type'] ) ? sanitize_text_field( wp_unslash( $_POST['gd_post_type'] ) ) : 'gd_place';
+
+		$csv_importer->options_handler->update_option(
+			'import_settings',
+			array_merge(
+				$existing_settings,
+				array(
+					'csv_file_id'     => $attach_id,
+					'csv_delimiter'   => $delimiter,
+					'csv_sample_data' => $sample_data,
+					'csv_row_count'   => $total_rows,
+					'gd_post_type'    => $gd_post_type,
+					'import_files'    => array(
+						array(
+							'name'      => $file_name,
+							'row_count' => $total_rows,
+						),
+					),
+				)
+			)
+		);
+
+		wp_send_json_success(
+			array(
+				'file_id'    => $attach_id,
+				'delimiter'  => $delimiter,
+				'headers'    => $headers,
+				'total_rows' => $total_rows,
+				/* translators: %1$d: number of columns, %2$d: number of rows */
+				'message'    => sprintf(
+					__( 'CSV file parsed successfully. Found %1$d columns and %2$d rows.', 'geodir-converter' ),
+					count( $headers ),
+					$total_rows
+				),
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for getting CSV mapping fields.
+	 *
+	 * @since 2.3.0
+	 * @return void
+	 */
+	public function csv_get_fields() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$csv_importer = $this->get_importer( 'csv' );
+		if ( is_wp_error( $csv_importer ) ) {
+			$this->send_json_error( $csv_importer->get_error_message() );
+		}
+
+		$post_type = isset( $_POST['gd_post_type'] ) ? sanitize_text_field( wp_unslash( $_POST['gd_post_type'] ) ) : 'gd_place';
+		$fields    = $csv_importer->get_mapping_fields( $post_type );
+
+		wp_send_json_success( array( 'fields' => $fields ) );
+	}
+
+	/**
+	 * AJAX handler for refreshing CSV mapping fields.
+	 *
+	 * @since 2.3.0
+	 * @return void
+	 */
+	public function csv_refresh_fields() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$csv_importer = $this->get_importer( 'csv' );
+		if ( is_wp_error( $csv_importer ) ) {
+			$this->send_json_error( $csv_importer->get_error_message() );
+		}
+
+		$post_type = isset( $_POST['gd_post_type'] ) ? sanitize_text_field( wp_unslash( $_POST['gd_post_type'] ) ) : 'gd_place';
+
+		$import_settings                 = $csv_importer->options_handler->get_option( 'import_settings', array() );
+		$import_settings['gd_post_type'] = $post_type;
+		$csv_importer->options_handler->update_option( 'import_settings', $import_settings );
+
+		$fields = $csv_importer->get_mapping_fields( $post_type );
+
+		ob_start();
+		$csv_importer->render_column_mapping_table();
+		$html = ob_get_clean();
+
+		wp_send_json_success(
+			array(
+				'fields' => $fields,
+				'html'   => $html,
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for getting CSV mapping step HTML.
+	 *
+	 * @since 2.3.0
+	 * @return void
+	 */
+	public function csv_get_mapping_step() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$csv_importer = $this->get_importer( 'csv' );
+		if ( is_wp_error( $csv_importer ) ) {
+			$this->send_json_error( $csv_importer->get_error_message() );
+		}
+
+		$file_id   = isset( $_POST['file_id'] ) ? absint( $_POST['file_id'] ) : 0;
+		$delimiter = isset( $_POST['delimiter'] ) ? sanitize_text_field( wp_unslash( $_POST['delimiter'] ) ) : ',';
+
+		if ( ! $file_id ) {
+			$this->send_json_error( __( 'File ID is required.', 'geodir-converter' ) );
+		}
+
+		$import_settings                  = $csv_importer->options_handler->get_option( 'import_settings', array() );
+		$import_settings['csv_file_id']   = $file_id;
+		$import_settings['csv_delimiter'] = $delimiter;
+		$csv_importer->options_handler->update_option( 'import_settings', $import_settings );
+
+		ob_start();
+		$csv_importer->render_settings();
+		$html = ob_get_clean();
+
+		wp_send_json_success( array( 'html' => $html ) );
+	}
+
+	/**
+	 * AJAX handler for clearing CSV file settings.
+	 *
+	 * @since 2.3.0
+	 * @return void
+	 */
+	public function csv_clear_file() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$csv_importer = $this->get_importer( 'csv' );
+		if ( is_wp_error( $csv_importer ) ) {
+			$this->send_json_error( $csv_importer->get_error_message() );
+		}
+
+		$csv_importer->clear_import_options();
+
+		ob_start();
+		$csv_importer->render_settings();
+		$html = ob_get_clean();
+
+		wp_send_json_success( array( 'html' => $html ) );
+	}
+
+	/**
+	 * AJAX handler for saving CSV mapping template.
+	 *
+	 * @since 2.3.0
+	 * @return void
+	 */
+	public function csv_save_template() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$csv_importer = $this->get_importer( 'csv' );
+		if ( is_wp_error( $csv_importer ) ) {
+			$this->send_json_error( $csv_importer->get_error_message() );
+		}
+
+		$name    = isset( $_POST['template_name'] ) ? sanitize_text_field( wp_unslash( $_POST['template_name'] ) ) : '';
+		$mapping = isset( $_POST['csv_mapping'] ) && is_array( $_POST['csv_mapping'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['csv_mapping'] ) ) : array();
+
+		if ( empty( $name ) ) {
+			$this->send_json_error( __( 'Template name is required.', 'geodir-converter' ) );
+		}
+
+		if ( empty( $mapping ) ) {
+			$this->send_json_error( __( 'Mapping data is required.', 'geodir-converter' ) );
+		}
+
+		$result = $csv_importer->save_mapping_template( $name, $mapping );
+
+		if ( is_wp_error( $result ) ) {
+			$this->send_json_error( $result->get_error_message() );
+		}
+
+		wp_send_json_success(
+			array(
+				'message'       => __( 'Template saved successfully.', 'geodir-converter' ),
+				'template_id'   => isset( $result['template_id'] ) ? $result['template_id'] : '',
+				'template_name' => isset( $result['template_name'] ) ? $result['template_name'] : $name,
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for loading CSV mapping template.
+	 *
+	 * @since 2.3.0
+	 * @return void
+	 */
+	public function csv_load_template() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$csv_importer = $this->get_importer( 'csv' );
+		if ( is_wp_error( $csv_importer ) ) {
+			$this->send_json_error( $csv_importer->get_error_message() );
+		}
+
+		$template_id = isset( $_POST['template_id'] ) ? sanitize_text_field( wp_unslash( $_POST['template_id'] ) ) : '';
+
+		if ( empty( $template_id ) ) {
+			$this->send_json_error( __( 'Template ID is required.', 'geodir-converter' ) );
+		}
+
+		$template = $csv_importer->load_mapping_template( $template_id );
+
+		if ( is_wp_error( $template ) ) {
+			$this->send_json_error( $template->get_error_message() );
+		}
+
+		// Update import settings with the template mapping.
+		$import_settings                 = $csv_importer->options_handler->get_option( 'import_settings', array() );
+		$import_settings['csv_mapping'] = isset( $template['mapping'] ) ? $template['mapping'] : array();
+		$csv_importer->options_handler->update_option( 'import_settings', $import_settings );
+
+		wp_send_json_success(
+			array(
+				'mapping' => $template['mapping'],
+				'message' => __( 'Template loaded successfully.', 'geodir-converter' ),
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for deleting CSV mapping template.
+	 *
+	 * @since 2.3.0
+	 * @return void
+	 */
+	public function csv_delete_template() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$csv_importer = $this->get_importer( 'csv' );
+		if ( is_wp_error( $csv_importer ) ) {
+			$this->send_json_error( $csv_importer->get_error_message() );
+		}
+
+		$template_id = isset( $_POST['template_id'] ) ? sanitize_text_field( wp_unslash( $_POST['template_id'] ) ) : '';
+
+		if ( empty( $template_id ) ) {
+			$this->send_json_error( __( 'Template ID is required.', 'geodir-converter' ) );
+		}
+
+		$result = $csv_importer->delete_mapping_template( $template_id );
+
+		if ( is_wp_error( $result ) ) {
+			$this->send_json_error( $result->get_error_message() );
+		}
+
+		wp_send_json_success(
+			array(
+				'message' => __( 'Template deleted successfully.', 'geodir-converter' ),
+			)
+		);
 	}
 }

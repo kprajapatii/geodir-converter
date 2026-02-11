@@ -263,7 +263,7 @@ abstract class GeoDir_Converter_Importer {
 		aui()->alert(
 			array(
 				'type'    => 'info',
-				'heading' => sprintf( esc_html__( 'The %1$s plugin is not active.', 'geodir-converter' ), $plugin_name ),
+				'heading' => esc_html__( sprintf( 'The %1$s plugin is not active.', $plugin_name ), 'geodir-converter' ),
 				'content' => sprintf(
 					esc_html__(
 						'%1$s will not be imported unless you %2$sinstall and activate the %3$s plugin%4$s first.',
@@ -369,7 +369,7 @@ abstract class GeoDir_Converter_Importer {
 
 		aui()->select(
 			array(
-				'id'          => 'wp_author_id',
+				'id'          => $this->importer_id . '_wp_author_id',
 				'name'        => 'wp_author_id',
 				'select2'     => true,
 				'label'       => $label,
@@ -442,6 +442,15 @@ abstract class GeoDir_Converter_Importer {
 	 */
 	protected function is_test_mode() {
 		return $this->get_import_setting( 'test_mode', 'no' ) === 'yes';
+	}
+
+	/**
+	 * Get the import settings.
+	 *
+	 * @return array The import settings.
+	 */
+	protected function get_import_settings() {
+		return (array) $this->options_handler->get_option_no_cache( 'import_settings', array() );
 	}
 
 	/**
@@ -618,7 +627,9 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Format image data for GeoDirectory.
 	 *
+	 * @since 2.0.2
 	 * @param array $images Images (single or multiple).
+	 * @param array $image_urls Optional. Image URLs to add to the formatted images.
 	 * @return string Formatted image data.
 	 */
 	protected function format_images_data( $images, $image_urls = array() ) {
@@ -758,10 +769,13 @@ abstract class GeoDir_Converter_Importer {
 			return compact( 'imported', 'failed' );
 		}
 
-		$params = wp_parse_args( $params, array(
-			'importer_id' => '',
-			'eq_suffix' => ''
-		) );
+		$params = wp_parse_args(
+			$params,
+			array(
+				'importer_id' => '',
+				'eq_suffix'   => '',
+			)
+		);
 
 		$admin_taxonomies = new GeoDir_Admin_Taxonomies();
 
@@ -830,7 +844,14 @@ abstract class GeoDir_Converter_Importer {
 					if ( $image_id && ( $attachment_url = wp_get_attachment_url( $image_id ) ) ) {
 						$image_url = geodir_file_relative_url( $attachment_url );
 
-						update_term_meta( $term_id, 'ct_cat_default_img', array( 'id'  => $image_id, 'src' => $image_url ) );
+						update_term_meta(
+							$term_id,
+							'ct_cat_default_img',
+							array(
+								'id'  => $image_id,
+								'src' => $image_url,
+							)
+						);
 					}
 				}
 
@@ -1015,7 +1036,7 @@ abstract class GeoDir_Converter_Importer {
 	 *
 	 * @return void
 	 */
-	protected function clear_import_options() {
+	public function clear_import_options() {
 		$this->options_handler->delete_option( 'stats' );
 		$this->options_handler->delete_option( 'import_log' );
 		$this->options_handler->delete_option( 'import_settings' );
@@ -1042,10 +1063,10 @@ abstract class GeoDir_Converter_Importer {
 				"SELECT pd.post_id
                 FROM {$details_table} pd
                 INNER JOIN {$wpdb->posts} p ON p.ID = pd.post_id
-                WHERE pd.{$meta_key} = %s
+                WHERE pd.{$meta_key} = %d
                 AND p.post_type = %s
                 LIMIT 1",
-				$listing_id,
+				absint( $listing_id ),
 				$post_type
 			)
 		);
@@ -1191,7 +1212,7 @@ abstract class GeoDir_Converter_Importer {
 
 		$field_id = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT id FROM " . GEODIR_CUSTOM_FIELDS_TABLE . " WHERE htmlvar_name = %s AND post_type = %s LIMIT 1",
+				'SELECT id FROM ' . GEODIR_CUSTOM_FIELDS_TABLE . ' WHERE htmlvar_name = %s AND post_type = %s LIMIT 1',
 				$htmlvar_name,
 				$post_type
 			)

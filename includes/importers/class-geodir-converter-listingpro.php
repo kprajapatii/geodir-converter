@@ -3124,7 +3124,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		if ( $postid ) {
 			$metabox = get_post_meta( $postid, 'lp_listingpro_options', true );
 
-			return ! empty( $metabox ) && isset( $metabox[ $name ] ) ? $metabox[ $name ] : "";
+			return ! empty( $metabox ) && isset( $metabox[ $name ] ) ? $metabox[ $name ] : '';
 		} else {
 			return false;
 		}

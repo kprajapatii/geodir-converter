@@ -723,13 +723,12 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		$tags       = $this->get_categories( $post->ID, self::TAX_LISTING_TAG, 'names', $post_type );
 
 		// Location & Address.
-		$location  = $this->get_default_location();
-		$latitude  = ! empty( $post_meta['_manual_lat'] ) ? $post_meta['_manual_lat'] : 0;
-		$longitude = ! empty( $post_meta['_manual_lng'] ) ? $post_meta['_manual_lng'] : 0;
-		$address   = ! empty( $post_meta['_address'] ) ? $post_meta['_address'] : '';
-		$zip       = ! empty( $post_meta['_zip'] ) ? $post_meta['_zip'] : '';
-
-		$has_coordinates = ! empty( $latitude ) && ! empty( $longitude );
+		$location        = $this->get_default_location();
+		$has_coordinates = isset( $post_meta['_manual_lat'], $post_meta['_manual_lng'] ) && ! empty( $post_meta['_manual_lat'] ) && ! empty( $post_meta['_manual_lng'] );
+		$latitude        = isset( $post_meta['_manual_lat'] ) && ! empty( $post_meta['_manual_lat'] ) ? $post_meta['_manual_lat'] : $location['latitude'];
+		$longitude       = isset( $post_meta['_manual_lng'] ) && ! empty( $post_meta['_manual_lng'] ) ? $post_meta['_manual_lng'] : $location['longitude'];
+		$address         = ! empty( $post_meta['_address'] ) ? $post_meta['_address'] : '';
+		$zip             = ! empty( $post_meta['_zip'] ) ? $post_meta['_zip'] : '';
 
 		if ( $has_coordinates ) {
 			$this->log( 'Pulling listing address from coordinates: ' . $latitude . ', ' . $longitude, 'info' );
