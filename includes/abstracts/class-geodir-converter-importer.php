@@ -263,15 +263,15 @@ abstract class GeoDir_Converter_Importer {
 		aui()->alert(
 			array(
 				'type'    => 'info',
-				'heading' => esc_html__( sprintf( 'The %1$s plugin is not active.', $plugin_name ), 'geodir-converter' ),
-				'content' => sprintf(
+				'heading' => wp_sprintf( esc_html__( 'The %1$s plugin is not active.', 'geodir-converter' ), $plugin_name ),
+				'content' => wp_sprintf(
 					esc_html__(
-						'%1$s will not be imported unless you %2$sinstall and activate the %3$s plugin%4$s first.',
+						'%1$s will not be imported unless you install and activate the %2$s%3$s%4$s plugin first.',
 						'geodir-converter'
 					),
 					esc_html( ucfirst( $import_type ) ),
-					esc_html( $plugin_name ),
 					'<a href="' . esc_url( $plugin_url ) . '">',
+					esc_html( $plugin_name ),
 					'</a>'
 				),
 				'class'   => 'mb-3',
