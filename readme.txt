@@ -5,7 +5,7 @@ Tags: convert, converter, connections, directorist, directories pro, directory, 
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 5.6
-Stable tag: 2.1.4
+Stable tag: 2.1.5
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
  
@@ -34,7 +34,7 @@ Currently supported directories:
 
 == Changelog ==
 
-= 2.1.5 - TBD =
+= 2.1.5 - 2026-02-19 =
 * Added CSV file importer with field mapping support - ADDED
 * Added support for importing listings from Connections directory plugin - ADDED
 * Added support for importing listings from Directories Pro plugin - ADDED
