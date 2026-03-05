@@ -91,21 +91,11 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.1.3
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'Directorist', 'geodir-converter' );
@@ -114,7 +104,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.1.3
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import directories and listings data from your Directorist installation.', 'geodir-converter' );
@@ -123,7 +115,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.1.3
+	 *
+	 * @return string The URL to the importer icon.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/directorist.png';
@@ -132,7 +126,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.1.3
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_DIRECTORIES;
@@ -140,6 +136,10 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.1.3
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		?>
@@ -163,10 +163,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 			$this->display_logs( $this->get_logs() );
 			$this->display_error_alert();
 			?>
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -174,10 +171,12 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.1.3
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
 	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -200,7 +199,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Get next task.
 	 *
-	 * @param array $task The current task.
+	 * @since 2.1.3
+	 *
+	 * @param array $task         The current task.
 	 * @param bool  $reset_offset Whether to reset the offset.
 	 *
 	 * @return array|false The next task or false if all tasks are completed.
@@ -234,6 +235,10 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.1.3
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		global $wpdb;
@@ -272,6 +277,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 
 	/**
 	 * Get custom fields.
+	 *
+	 * @since 2.1.3
 	 *
 	 * @return array The custom fields.
 	 */
@@ -413,9 +420,12 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Get the corresponding GD field key for a given shortname.
 	 *
+	 * @since 2.1.3
+	 *
 	 * @param string $shortname The field shortname.
-	 * @param array  $gd_field The GD field.
+	 * @param array  $gd_field  The GD field.
 	 * @param array  $dir_field The Directorist field.
+	 *
 	 * @return string The mapped field key or the original shortname if no match is found.
 	 */
 	private function map_field_key( $shortname, $gd_field = array(), $dir_field = array() ) {
@@ -450,11 +460,14 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Map PMD field type to GeoDirectory field type.
+	 * Map Directorist field type to GeoDirectory field type.
 	 *
-	 * @param string $field_type The PMD field type.
-	 * @param array  $gd_field The GD field.
-	 * @param array  $dir_field The Directorist field.
+	 * @since 2.1.3
+	 *
+	 * @param string $field_type The Directorist field type.
+	 * @param array  $gd_field   The GD field.
+	 * @param array  $dir_field  The Directorist field.
+	 *
 	 * @return string|false The GeoDirectory field type or false if not supported.
 	 */
 	private function map_field_type( $field_type, $gd_field = array(), $dir_field = array() ) {
@@ -523,7 +536,10 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Map field type key to field data type.
 	 *
+	 * @since 2.1.3
+	 *
 	 * @param string $field_type The field type key.
+	 *
 	 * @return string The field data type.
 	 */
 	private function map_data_type( $field_type ) {
@@ -558,11 +574,13 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import listings from Listify to GeoDirectory.
+	 * Parse listings from Directorist for import into GeoDirectory.
 	 *
 	 * @since 2.1.3
-	 * @param array $task The offset to start importing from.
-	 * @return array Result of the import operation.
+	 *
+	 * @param array $task The current task data including offset.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_parse_listings( array $task ) {
 		global $wpdb;
@@ -628,8 +646,10 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Import listings from Directorist to GeoDirectory.
 	 *
 	 * @since 2.1.3
-	 * @param array $task The task to import.
-	 * @return array Result of the import operation.
+	 *
+	 * @param array $task The task data containing post IDs to import.
+	 *
+	 * @return false Always returns false to indicate task completion.
 	 */
 	public function task_import_listings( $task ) {
 		$post_ids = isset( $task['post_ids'] ) && ! empty( $task['post_ids'] ) ? (array) $task['post_ids'] : array();
@@ -656,56 +676,42 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 			$title  = $listing->post_title;
 			$result = $this->import_single_listing( $listing );
 
-			switch ( $result['status'] ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					if ( self::IMPORT_STATUS_SUCCESS === $result['status'] ) {
-						$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'listing', $title ), 'success' );
-						$this->increase_succeed_imports( 1 );
-					} else {
-						$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'listing', $title ), 'warning' );
-						$this->increase_succeed_imports( 1 );
-					}
+			$this->process_import_result( $result['status'], 'listing', $title, $listing->ID );
 
-					// Update listings mapping.
-					if ( ! empty( $result['gd_post_id'] ) && ! empty( $result['gd_package_id'] ) ) {
-						$mapping[ (int) $listing->ID ] = array(
-							'gd_post_id'    => $result['gd_post_id'],
-							'gd_package_id' => $result['gd_package_id'],
-						);
-					}
-					break;
-
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-
-				case self::IMPORT_STATUS_FAILED:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
+			// Update listings mapping.
+			if ( in_array( $result['status'], array( self::IMPORT_STATUS_SUCCESS, self::IMPORT_STATUS_UPDATED ), true ) ) {
+				if ( ! empty( $result['gd_post_id'] ) && ! empty( $result['gd_package_id'] ) ) {
+					$mapping[ (int) $listing->ID ] = array(
+						'gd_post_id'    => $result['gd_post_id'],
+						'gd_package_id' => $result['gd_package_id'],
+					);
+				}
 			}
 		}
 
 		// Update listings mapping.
 		$this->options_handler->update_option( 'listings_mapping', $mapping );
 
+		$this->flush_failed_items();
+
 		return false;
 	}
 
 	/**
-	 * Convert a single Listify listing to GeoDirectory format.
+	 * Convert a single Directorist listing to GeoDirectory format.
 	 *
 	 * @since 2.1.3
-	 * @param  object $post The post to convert.
-	 * @return array|int Converted listing data or import status.
+	 *
+	 * @param object $post The post object to convert.
+	 *
+	 * @return array The import result array with status and optional post/package IDs.
 	 */
 	private function import_single_listing( $post ) {
 		// Check if the post has already been imported.
 		$post_type = self::get_listing_gd_post_type( $post->ID, $this->is_test_mode() );
 
 		if ( empty( $post_type ) ) {
+			/* translators: %s: listing title */
 			$this->log( wp_sprintf( __( 'No post type found for the listing %s.', 'geodir-converter' ), $post->post_title ) );
 
 			return array( 'status' => self::IMPORT_STATUS_FAILED );
@@ -771,7 +777,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		// Socail Links.
 		$_social_links = ! empty( $post_meta['_social'] ) && is_serialized( $post_meta['_social'] ) ? maybe_unserialize( $post_meta['_social'] ) : '';
 		$social_links  = array();
-		if ( ! empty( $_social_links ) && is_array( $social_links ) ) {
+		if ( ! empty( $_social_links ) && is_array( $_social_links ) ) {
 			foreach ( $_social_links as $social_link ) {
 				if ( ! empty( $social_link['id'] ) && ! empty( $social_link['url'] ) ) {
 					$social_links[ $social_link['id'] ] = $social_link['url'];
@@ -821,7 +827,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 
 			// Dire standard fields.
 			$this->importer_id . '_id' => $post->ID,
-			'phone'                    => ! empty( $post_meta['phone'] ) ? $post_meta['_phone'] : '',
+			'phone'                    => ! empty( $post_meta['_phone'] ) ? $post_meta['_phone'] : '',
 			'website'                  => ! empty( $post_meta['_website'] ) ? $post_meta['_website'] : '',
 			'email'                    => ! empty( $post_meta['_email'] ) ? $post_meta['_email'] : '',
 			'facebook'                 => ! empty( $post_meta['_facebook'] ) ? $post_meta['_facebook'] : ( ! empty( $social_links['facebook'] ) ? $social_links['facebook'] : '' ),
@@ -909,7 +915,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get the featured image URL.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param int $post_id The post ID.
+	 *
 	 * @return string The featured image URL.
 	 */
 	private function get_featured_image( $post_id ) {
@@ -920,7 +928,10 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Get gallery images.
 	 *
+	 * @since 2.1.3
+	 *
 	 * @param array $post_meta The post meta data.
+	 *
 	 * @return array The gallery images.
 	 */
 	private function get_post_images( $post_meta ) {
@@ -973,9 +984,12 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Process form fields and extract values from post meta.
 	 *
-	 * @param object $post The post object.
+	 * @since 2.1.3
+	 *
+	 * @param object $post      The post object.
 	 * @param array  $post_meta The post meta data.
 	 * @param string $post_type The post type.
+	 *
 	 * @return array The processed fields.
 	 */
 	private function process_form_fields( $post, $post_meta, $post_type ) {
@@ -1019,9 +1033,11 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Parses a field value for business hours.
 	 *
 	 * @since 2.1.3
-	 * @param array  $value The field value.
+	 *
+	 * @param array  $value    The field value.
 	 * @param string $timezone The timezone.
 	 * @param bool   $open24x7 Whether the business is open 24/7.
+	 *
 	 * @return string The parsed field value.
 	 */
 	public function parse_field_business_hours( $value, $timezone = '', $open24x7 = false ) {
@@ -1069,7 +1085,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Parses a field value for FAQs.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param array $value The field value.
+	 *
 	 * @return string The parsed field value.
 	 */
 	public function parse_field_faqs( $value ) {
@@ -1090,9 +1108,12 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Retrieves the current post's categories.
 	 *
 	 * @since 2.1.3
-	 * @param int    $post_id The post ID.
-	 * @param string $taxonomy The taxonomy to query for.
+	 *
+	 * @param int    $post_id     The post ID.
+	 * @param string $taxonomy    The taxonomy to query for.
 	 * @param string $return_type Determines whether to return IDs or names.
+	 * @param string $post_type   The GeoDirectory post type.
+	 *
 	 * @return array An array of category IDs or names based on the $return_type.
 	 */
 	private function get_categories( $post_id, $taxonomy = self::TAX_LISTING_CATEGORY, $return_type = 'ids', $post_type = '' ) {
@@ -1134,6 +1155,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Counts the number of listings.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @return int The number of listings.
 	 */
 	private function count_listings() {
@@ -1149,6 +1171,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Checks if multi-directory is enabled.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @return bool True if multi-directory is enabled, false otherwise.
 	 */
 	public function is_multi_directory_enabled() {
@@ -1159,9 +1182,11 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get option.
 	 *
 	 * @since 2.1.3
-	 * @param string $key Option key.
-	 * @param mixed  $default Default value.
+	 *
+	 * @param string $key           Option key.
+	 * @param mixed  $default       Default value.
 	 * @param bool   $force_default Force default value.
+	 *
 	 * @return mixed Option value.
 	 */
 	public function get_option( $key, $default = false, $force_default = false ) {
@@ -1196,7 +1221,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get directories.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param array $args Arguments.
+	 *
 	 * @return array Directories.
 	 */
 	public function get_directories( $args = array() ) {
@@ -1230,6 +1257,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get directory taxonomy.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @return string Directory taxonomy.
 	 */
 	public function get_directory_taxonomy() {
@@ -1246,6 +1274,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get directory categories.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @return array Directory categories.
 	 */
 	public function get_directory_categories() {
@@ -1267,6 +1296,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get directory tags.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @return array Directory tags.
 	 */
 	public function get_directory_tags() {
@@ -1288,8 +1318,10 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get directory fields.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param int    $directory_id Directory ID.
-	 * @param string $post_type GD post type.
+	 * @param string $post_type    GD post type.
+	 *
 	 * @return array Directory fields.
 	 */
 	public function get_directory_fields( $directory_id, $post_type ) {
@@ -1390,10 +1422,12 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Prepare directory to GD field.
 	 *
 	 * @since 2.1.3
-	 * @param array  $data Directory field data.
-	 * @param string $post_type GD post type.
-	 * @param int    $package_ids Package IDs.
-	 * @param bool   $is_placeholder Is placeholder.
+	 *
+	 * @param array  $data           Directory field data.
+	 * @param string $post_type      GD post type.
+	 * @param int    $package_ids    Package IDs.
+	 * @param bool   $is_placeholder Whether the field is a placeholder.
+	 *
 	 * @return array Prepared field data.
 	 */
 	public function prepare_dir2gd_field( $data, $post_type, $package_ids = 0, $is_placeholder = false ) {
@@ -1510,8 +1544,10 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get directory to GD post type.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param int  $directory_id Directory ID.
-	 * @param bool $is_test Test mode.
+	 * @param bool $is_test      Whether in test mode.
+	 *
 	 * @return string GD post type.
 	 */
 	public static function get_dir2gd_post_type( $directory_id, $is_test = false ) {
@@ -1528,8 +1564,10 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get listing GD post type.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param int  $post_id Post ID.
-	 * @param bool $is_test Test mode.
+	 * @param bool $is_test Whether in test mode.
+	 *
 	 * @return string GD post type.
 	 */
 	public static function get_listing_gd_post_type( $post_id, $is_test = false ) {
@@ -1542,48 +1580,50 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Import directories to GeoDirectory post types.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_directories( $task ) {
 		// Set total number of items to import.
 		$this->set_import_total();
 
 		// Log import started.
-		$this->log( esc_html__( 'Directories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Directories: Import started.', 'geodir-converter' ) );
 
 		$directories = $this->get_directories();
 
 		if ( empty( $directories ) ) {
-			$this->log( esc_html__( 'Directories: No directories to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Directories: No directories to import.', 'geodir-converter' ), 'warning' );
 
 			return $this->next_task( $task, true );
 		}
 
 		foreach ( $directories as $directory ) {
-			$this->import_directory( $directory, $task );
+			$this->import_directory( $directory );
 		}
 
 		return $this->next_task( $task, true );
 	}
 
 	/**
-	 * Import categories from Listify to GeoDirectory.
+	 * Import categories from Directorist to GeoDirectory.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_categories( $task ) {
 		// Log import started.
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 
 		$directories = $this->get_directories();
 
 		if ( empty( $directories ) ) {
-			$this->log( esc_html__( 'Categories: No directories to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No directories to import.', 'geodir-converter' ), 'warning' );
 
 			return $this->next_task( $task, true );
 		}
@@ -1598,17 +1638,20 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Import tags.
 	 *
+	 * @since 2.1.3
+	 *
 	 * @param array $task Task details.
-	 * @return array Updated task details.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_tags( array $task ) {
 		// Log import started.
-		$this->log( esc_html__( 'Tags: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Tags: Import started.', 'geodir-converter' ) );
 
 		$directories = $this->get_directories();
 
 		if ( empty( $directories ) ) {
-			$this->log( esc_html__( 'Tags: No directories to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Tags: No directories to import.', 'geodir-converter' ), 'warning' );
 
 			return $this->next_task( $task, true );
 		}
@@ -1621,20 +1664,22 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import fields from Listify to GeoDirectory.
+	 * Import fields from Directorist to GeoDirectory.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param array $task Task details.
-	 * @return array Result of the import operation.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_fields( $task ) {
 		// Log import started.
-		$this->log( esc_html__( 'Fields: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Fields: Import started.', 'geodir-converter' ) );
 
 		$directories = $this->get_directories();
 
 		if ( empty( $directories ) ) {
-			$this->log( esc_html__( 'Fields: No directories to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Fields: No directories to import.', 'geodir-converter' ), 'warning' );
 
 			return $this->next_task( $task, true );
 		}
@@ -1654,7 +1699,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Import directory.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param object $directory Directory details.
+	 *
 	 * @return bool True on success, false on failure.
 	 */
 	public function import_directory( $directory ) {
@@ -1679,7 +1726,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		if ( post_type_exists( $post_type ) ) {
 			$this->increase_skipped_imports( 5 );
 
-			$this->log( wp_sprintf( esc_html__( '%1$s Directory: Post type %2$s already exists.', 'geodir-converter' ), $directory->name, $post_type ) );
+			/* translators: %1$s: directory name, %2$s: post type */
+			$this->log( wp_sprintf( __( '%1$s Directory: Post type %2$s already exists.', 'geodir-converter' ), $directory->name, $post_type ) );
 
 			return false;
 		}
@@ -1687,7 +1735,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		if ( $this->is_test_mode() ) {
 			$this->increase_succeed_imports( 5 );
 
-			$this->log( wp_sprintf( esc_html__( '%1$s Directory: Post type %2$s created.', 'geodir-converter' ), $directory->name, $post_type ), 'success' );
+			/* translators: %1$s: directory name, %2$s: post type */
+			$this->log( wp_sprintf( __( '%1$s Directory: Post type %2$s created.', 'geodir-converter' ), $directory->name, $post_type ), 'success' );
 
 			return true;
 		}
@@ -1756,7 +1805,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		if ( is_wp_error( $result ) ) {
 			$this->increase_failed_imports( 5 );
 
-			$this->log( wp_sprintf( esc_html__( '%1$s Directory: Import failed. %2$s', 'geodir-converter' ), $directory->name, $result->get_error_message() ), 'error' );
+			/* translators: %1$s: directory name, %2$s: error message */
+			$this->log( wp_sprintf( __( '%1$s Directory: Import failed. %2$s', 'geodir-converter' ), $directory->name, $result->get_error_message() ), 'error' );
 
 			return false;
 		} else {
@@ -1764,7 +1814,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 
 			$this->increase_succeed_imports( 5 );
 
-			$this->log( wp_sprintf( esc_html__( '%1$s Directory: Post type %2$s created.', 'geodir-converter' ), $directory->name, $post_type ), 'success' );
+			/* translators: %1$s: directory name, %2$s: post type */
+			$this->log( wp_sprintf( __( '%1$s Directory: Post type %2$s created.', 'geodir-converter' ), $directory->name, $post_type ), 'success' );
 
 			return true;
 		}
@@ -1774,9 +1825,11 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Save post type.
 	 *
 	 * @since 2.1.3
-	 * @param array $data Post type data.
+	 *
+	 * @param array $data      Post type data.
 	 * @param array $prev_data Previous post type data.
-	 * @return bool True on success, false on failure.
+	 *
+	 * @return true Always returns true on success.
 	 */
 	public function save_post_type( $data, $prev_data = array() ) {
 		$post_type     = str_replace( '-', '_', sanitize_key( $data['post_type'] ) );
@@ -1905,7 +1958,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	 * Get default preview image source.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param int $directory_id Directory ID.
+	 *
 	 * @return string Default preview image source.
 	 */
 	public function default_preview_image_src( $directory_id ) {
@@ -1922,23 +1977,27 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import categories from Listify to GeoDirectory.
+	 * Import categories from Directorist to GeoDirectory.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param object $directory Directory details.
-	 * @return void
+	 *
+	 * @return void|false Void on success or false if skipped.
 	 */
 	public function import_directory_categories( $directory ) {
 		$post_type = self::get_dir2gd_post_type( $directory->term_id, $this->is_test_mode() );
 
 		if ( ! geodir_is_gd_post_type( $post_type ) ) {
-			$this->log( wp_sprintf( esc_html__( '%1$s Categories: No post type found for directory %2$s.', 'geodir-converter' ), $directory->name, $directory->name ), 'warning' );
+			/* translators: %1$s: directory name, %2$s: directory slug */
+			$this->log( wp_sprintf( __( '%1$s Categories: No post type found for directory %2$s.', 'geodir-converter' ), $directory->name, $directory->name ), 'warning' );
 
 			return false;
 		}
 
 		if ( 0 === (int) wp_count_terms( self::TAX_LISTING_CATEGORY ) ) {
-			$this->log( wp_sprintf( esc_html__( '%s Categories: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
+			/* translators: %s: directory name */
+			$this->log( wp_sprintf( __( '%s Categories: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
 
 			return false;
 		}
@@ -1946,16 +2005,18 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		$categories = $this->get_directory_categories();
 
 		if ( empty( $categories ) ) {
-			$this->log( wp_sprintf( esc_html__( '%s Categories: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
+			/* translators: %s: directory name */
+			$this->log( wp_sprintf( __( '%s Categories: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
 
 			return false;
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $categories ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$s: post type name, %2$d: number of imported terms, %3$d: number of failed imports */
-					esc_html__( '%1$s Categories: Import completed. %2$d imported, %3$d failed.', 'geodir-converter' ),
+					__( '%1$s Categories: Import completed. %2$d imported, %3$d failed.', 'geodir-converter' ),
 					$directory->name,
 					count( $categories ),
 					0
@@ -1982,7 +2043,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		$this->log(
 			wp_sprintf(
 				/* translators: %1$s: post type name, %2$d: number of imported terms, %3$d: number of failed imports */
-				esc_html__( '%1$s Categories: Import completed. %2$d imported, %3$d failed.', 'geodir-converter' ),
+				__( '%1$s Categories: Import completed. %2$d imported, %3$d failed.', 'geodir-converter' ),
 				$directory->name,
 				$result['imported'],
 				$result['failed']
@@ -1994,23 +2055,27 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import tags from Listify to GeoDirectory.
+	 * Import tags from Directorist to GeoDirectory.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param object $directory Directory details.
+	 *
 	 * @return void
 	 */
 	public function import_directory_tags( $directory ) {
 		$post_type = self::get_dir2gd_post_type( $directory->term_id, $this->is_test_mode() );
 
 		if ( ! geodir_is_gd_post_type( $post_type ) ) {
-			$this->log( wp_sprintf( esc_html__( '%1$s Tags: No post type found for directory %2$s.', 'geodir-converter' ), $directory->name, $directory->name ), 'warning' );
+			/* translators: %1$s: directory name, %2$s: directory slug */
+			$this->log( wp_sprintf( __( '%1$s Tags: No post type found for directory %2$s.', 'geodir-converter' ), $directory->name, $directory->name ), 'warning' );
 
 			return;
 		}
 
 		if ( 0 === (int) wp_count_terms( self::TAX_LISTING_TAG ) ) {
-			$this->log( wp_sprintf( esc_html__( '%s Tags: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
+			/* translators: %s: directory name */
+			$this->log( wp_sprintf( __( '%s Tags: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
 
 			return;
 		}
@@ -2018,16 +2083,18 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		$tags = $this->get_directory_tags();
 
 		if ( empty( $tags ) ) {
-			$this->log( wp_sprintf( esc_html__( '%s Tags: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
+			/* translators: %s: directory name */
+			$this->log( wp_sprintf( __( '%s Tags: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
 
 			return;
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $tags ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$s: post type name, %2$d: number of imported terms, %3$d: number of failed imports */
-					esc_html__( '%1$s Tags: Import completed. %2$d imported, %3$d failed.', 'geodir-converter' ),
+					__( '%1$s Tags: Import completed. %2$d imported, %3$d failed.', 'geodir-converter' ),
 					$directory->name,
 					count( $tags ),
 					0
@@ -2054,7 +2121,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		$this->log(
 			wp_sprintf(
 				/* translators: %1$s: post type name, %2$d: number of imported terms, %3$d: number of failed imports */
-				esc_html__( '%1$s Tags: Import completed. %2$d imported, %3$d failed.', 'geodir-converter' ),
+				__( '%1$s Tags: Import completed. %2$d imported, %3$d failed.', 'geodir-converter' ),
 				$directory->name,
 				$result['imported'],
 				$result['failed']
@@ -2066,12 +2133,14 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import fields from Listify to GeoDirectory.
+	 * Import fields from Directorist to GeoDirectory.
 	 *
 	 * @since 2.1.3
+	 *
 	 * @param object $directory Directory details.
-	 * @param array  $task Task details.
-	 * @return array Result of the import operation.
+	 * @param array  $task      Task details.
+	 *
+	 * @return bool|false True on success or false if skipped.
 	 */
 	public function import_directory_fields( $directory, $task ) {
 		global $geodir_cf_parent;
@@ -2083,7 +2152,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		$post_type = self::get_dir2gd_post_type( $directory->term_id, $this->is_test_mode() );
 
 		if ( ! geodir_is_gd_post_type( $post_type ) ) {
-			$this->log( wp_sprintf( esc_html__( '%1$s Fields: No post type found for directory %2$s.', 'geodir-converter' ), $directory->name, $directory->name ), 'warning' );
+			/* translators: %1$s: directory name, %2$s: directory slug */
+			$this->log( wp_sprintf( __( '%1$s Fields: No post type found for directory %2$s.', 'geodir-converter' ), $directory->name, $directory->name ), 'warning' );
 
 			return false;
 		}
@@ -2091,7 +2161,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		$fields = $this->get_directory_fields( $directory->term_id, $post_type );
 
 		if ( empty( $fields ) ) {
-			$this->log( wp_sprintf( esc_html__( '%s Fields: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
+			/* translators: %s: directory name */
+			$this->log( wp_sprintf( __( '%s Fields: No items to import.', 'geodir-converter' ), $directory->name ), 'warning' );
 
 			return false;
 		}
@@ -2119,7 +2190,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 			if ( is_wp_error( $field ) ) {
 				++$failed;
 
-				$this->log( wp_sprintf( esc_html__( 'Fail to import %1$s field: %2$s. Error: %3$s', 'geodir-converter' ), $directory->name, $field['admin_title'], $field->get_error_message() ), 'error' );
+				/* translators: %1$s: directory name, %2$s: field name, %3$s: error message */
+				$this->log( wp_sprintf( __( 'Fail to import %1$s field: %2$s. Error: %3$s', 'geodir-converter' ), $directory->name, $row['admin_title'], $field->get_error_message() ), 'error' );
 
 				continue;
 			}
@@ -2128,7 +2200,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 			if ( $this->should_skip_field( $field['htmlvar_name'] ) ) {
 				++$skipped;
 
-				// $this->log( wp_sprintf( esc_html__( '%1$s skipped field: %2$s', 'geodir-converter' ), $directory->name, $field['admin_title'] ), 'warning' );
+				// $this->log( wp_sprintf( __( '%1$s skipped field: %2$s', 'geodir-converter' ), $directory->name, $field['admin_title'] ), 'warning' );
 
 				continue;
 			}
@@ -2149,7 +2221,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 			if ( is_wp_error( $response ) ) {
 				++$failed;
 
-				$this->log( wp_sprintf( esc_html__( 'Fail to import %1$s field: %2$s. Error: %3$s', 'geodir-converter' ), $directory->name, $field['admin_title'], $response->get_error_message() ), 'error' );
+				/* translators: %1$s: directory name, %2$s: field name, %3$s: error message */
+				$this->log( wp_sprintf( __( 'Fail to import %1$s field: %2$s. Error: %3$s', 'geodir-converter' ), $directory->name, $field['admin_title'], $response->get_error_message() ), 'error' );
 
 				continue;
 			}
@@ -2171,6 +2244,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 
 		$this->log(
 			wp_sprintf(
+				/* translators: %1$s: directory name, %2$d: imported count, %3$d: updated count, %4$d: skipped count, %5$d: failed count */
 				__( '%1$s Fields import completed: %2$d imported, %3$d updated, %4$d skipped, %5$d failed.', 'geodir-converter' ),
 				$directory->name,
 				$imported,
@@ -2186,6 +2260,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 
 	/**
 	 * Sanitize custom field data.
+	 *
+	 * @since 2.1.3
 	 *
 	 * @param array $data The custom field data.
 	 * @param bool  $skip Whether to skip the custom field.
@@ -2344,6 +2420,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Switch custom field keys.
 	 *
+	 * @since 2.1.3
+	 *
 	 * @param bool $import Whether to import or export.
 	 *
 	 * @return array Custom field keys.
@@ -2371,7 +2449,9 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 	/**
 	 * Check if a custom field exists.
 	 *
-	 * @param int    $field_id The ID of the custom field.
+	 * @since 2.1.3
+	 *
+	 * @param int    $field_id  The ID of the custom field.
 	 * @param string $post_type The post type of the custom field.
 	 *
 	 * @return int The count of the custom field.
@@ -2386,6 +2466,8 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 
 	/**
 	 * Get extra fields keys.
+	 *
+	 * @since 2.1.3
 	 *
 	 * @param bool $import Whether to import or export.
 	 *

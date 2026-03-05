@@ -23,6 +23,9 @@ use GeoDir_Converter\Importers\GeoDir_Converter_Directories_Pro;
 use GeoDir_Converter\Importers\GeoDir_Converter_uListing;
 use GeoDir_Converter\Importers\GeoDir_Converter_Connections;
 use GeoDir_Converter\Importers\GeoDir_Converter_CSV;
+// use GeoDir_Converter\Importers\GeoDir_Converter_WP_Residence;
+// use GeoDir_Converter\Importers\GeoDir_Converter_MyListing;
+use GeoDir_Converter\Importers\GeoDir_Converter_aDirectory;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -50,6 +53,8 @@ final class GeoDir_Converter {
 
 	/**
 	 * GeoDir_Converter constructor.
+	 *
+	 * @since 2.0.2
 	 */
 	private function __construct() {
 		$this->init_hooks();
@@ -66,6 +71,8 @@ final class GeoDir_Converter {
 	 * Initialize hooks.
 	 *
 	 * @since 1.0.0
+	 *
+	 * @return void
 	 */
 	private function init_hooks() {
 		add_action( 'plugins_loaded', array( $this, 'load_plugin_textdomain' ) );
@@ -85,6 +92,8 @@ final class GeoDir_Converter {
 	 *
 	 * @since  1.0.0
 	 * @access private
+	 *
+	 * @return void
 	 */
 	private function load_importers() {
 		GeoDir_Converter_CSV::instance();
@@ -99,13 +108,19 @@ final class GeoDir_Converter {
 		GeoDir_Converter_Directories_Pro::instance();
 		GeoDir_Converter_uListing::instance();
 		GeoDir_Converter_Connections::instance();
+		// GeoDir_Converter_WP_Residence::instance();
+		// GeoDir_Converter_MyListing::instance();
+		GeoDir_Converter_aDirectory::instance();
 	}
 
 	/**
 	 * Define constant if not already set.
 	 *
-	 * @param  string      $name  Name of the constant to define.
-	 * @param  string|bool $value Value of the constant to define.
+	 * @since 2.0.2
+	 *
+	 * @param string      $name  Name of the constant to define.
+	 * @param string|bool $value Value of the constant to define.
+	 * @return void
 	 */
 	private function define( $name, $value ) {
 		if ( ! defined( $name ) ) {
@@ -116,7 +131,9 @@ final class GeoDir_Converter {
 	/**
 	 * Get script version for cache busting.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The plugin version, or current timestamp when SCRIPT_DEBUG is enabled.
 	 */
 	public function get_script_version() {
 		return defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? time() : GEODIR_CONVERTER_VERSION;
@@ -125,7 +142,9 @@ final class GeoDir_Converter {
 	/**
 	 * Get script suffix based on debug mode.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string Empty string when SCRIPT_DEBUG is enabled, '.min' otherwise.
 	 */
 	public function get_script_suffix() {
 		return defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
@@ -133,6 +152,10 @@ final class GeoDir_Converter {
 
 	/**
 	 * Load the plugin text domain for translation.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function load_plugin_textdomain() {
 		// Determines the current locale.
@@ -144,10 +167,12 @@ final class GeoDir_Converter {
 	}
 
 	/**
-	 * Adds a link to the plugin's admin page on the plugins overview screen
+	 * Adds a link to the plugin's admin page on the plugins overview screen.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array  $links Array of plugin action links.
-	 * @param string $file The plugin basename.
+	 * @param string $file  The plugin basename.
 	 * @return array Modified array of plugin action links.
 	 */
 	public function plugin_action_links( $links, $file ) {
@@ -166,7 +191,9 @@ final class GeoDir_Converter {
 	}
 
 	/**
-	 * Returns a url to the plugin's admin page
+	 * Returns a URL to the plugin's admin page.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @return string Admin page URL.
 	 */
@@ -180,7 +207,9 @@ final class GeoDir_Converter {
 	}
 
 	/**
-	 * Maybe redirect the user to the plugin's admin page
+	 * Maybe redirect the user to the plugin's admin page.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @return void
 	 */
@@ -200,7 +229,9 @@ final class GeoDir_Converter {
 	}
 
 	/**
-	 * Retrieves a list of all registered importers
+	 * Retrieves a list of all registered importers.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @return array List of registered importers.
 	 */
@@ -211,10 +242,12 @@ final class GeoDir_Converter {
 	/**
 	 * Filter to skip sending completed invoice emails for invoices created by GeoDir Converter.
 	 *
-	 * @param bool   $skip     Whether to skip sending the email.
-	 * @param string $type     The email type.
-	 * @param object $invoice  The invoice object.
-	 * @return bool
+	 * @since 2.0.2
+	 *
+	 * @param bool   $skip    Whether to skip sending the email.
+	 * @param string $type    The email type.
+	 * @param object $invoice The invoice object.
+	 * @return bool Whether to skip the invoice email.
 	 */
 	public function skip_invoice_email( $skip, $type, $invoice ) {
 		if ( $invoice->get_created_via() === 'geodir-converter' ) {
@@ -227,8 +260,10 @@ final class GeoDir_Converter {
 	/**
 	 * Filter to save custom fields data for Directorist.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array  $cf_data The custom fields data.
-	 * @param object $field The custom field object.
+	 * @param object $field   The custom field object.
 	 * @return array The filtered custom fields data.
 	 */
 	public function cpt_cf_save_data( $cf_data, $field ) {

@@ -160,21 +160,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'eDirectory', 'geodir-converter' );
@@ -183,7 +173,9 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings, events, users and invoices from your eDirectory installation.', 'geodir-converter' );
@@ -192,7 +184,9 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The URL to the importer icon.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/edirectory.png';
@@ -201,7 +195,9 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_USERS;
@@ -209,6 +205,10 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		$import_settings  = (array) $this->options_handler->get_option( 'import_settings', array() );
@@ -304,7 +304,7 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 								<div class="progress my-1" role="progressbar" aria-valuemin="0" aria-valuemax="100">
 									<div class="progress-bar progress-bar-striped bg-gray-dark" style="width: 100%;"><?php echo esc_html( '100%' ); ?></div>
 								</div>
-								<div class="geodir-converter-progress-status small text-muted mt-1"><?php printf( __( 'Successfully parsed listing: Found %d rows.', 'geodir-converter' ), isset( $file['row_count'] ) ? absint( $file['row_count'] ) : 0 ); ?></div>
+								<div class="geodir-converter-progress-status small text-muted mt-1"><?php /* translators: %d: number of rows */ printf( __( 'Successfully parsed listing: Found %d rows.', 'geodir-converter' ), isset( $file['row_count'] ) ? absint( $file['row_count'] ) : 0 ); ?></div>
 							</div>
 						<?php endforeach; ?>
 					</div>
@@ -323,10 +323,7 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 				$this->display_error_alert();
 				?>
 
-				<div class="geodir-converter-actions mt-3">
-					<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-					<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-				</div>
+				<?php $this->display_action_buttons(); ?>
 			</div>
 		</form>
 		<?php
@@ -335,10 +332,12 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
 	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -419,8 +418,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Test the API connection.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $settings The settings to validate.
-	 * @return array|WP_Error Validated and sanitized settings or WP_Error on failure.
+	 *
+	 * @return true|WP_Error True on success or WP_Error on failure.
 	 */
 	public function test_api_connection( array $settings ) {
 		$this->base_url  = rtrim( $settings['edirectory_site_url'], '/' );
@@ -437,6 +439,8 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 
 	/**
 	 * Get next task.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $task The current task.
 	 *
@@ -469,9 +473,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Import users from eDirectory to GeoDirectory.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_users( $task ) {
 		$offset = isset( $task['offset'] ) ? absint( $task['offset'] ) : 0;
@@ -556,7 +562,8 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 					++$imported;
 					$this->increase_succeed_imports( 1 );
 
-					$this->log( sprintf( __( 'Imported user: %s', 'geodir-converter' ), $email ), 'info' );
+					/* translators: %s: user email */
+				$this->log( sprintf( __( 'Imported user: %s', 'geodir-converter' ), $email ), 'info' );
 					continue;
 				}
 
@@ -571,7 +578,8 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 					++$failed;
 					$this->increase_failed_imports( 1 );
 
-					$this->log( sprintf( __( 'Failed to import user: %1$s. Error: %2$s', 'geodir-converter' ), $email, $user_id->get_error_message() ), 'error' );
+					/* translators: %1$s: user email, %2$s: error message */
+				$this->log( sprintf( __( 'Failed to import user: %1$s. Error: %2$s', 'geodir-converter' ), $email, $user_id->get_error_message() ), 'error' );
 					continue;
 				}
 
@@ -586,7 +594,9 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 				}
 
 				$log_message = $existing_user
+				/* translators: %s: user email */
 				? sprintf( __( 'Updated user: %s', 'geodir-converter' ), $email )
+				/* translators: %s: user email */
 				: sprintf( __( 'Imported new user: %s', 'geodir-converter' ), $email );
 
 				$this->log( $log_message );
@@ -604,9 +614,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Import packages from eDirectory to GeoDirectory.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_packages( $task ) {
 		// Abort early if the payment manager plugin is not installed.
@@ -695,11 +707,14 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 			$package_id   = GeoDir_Pricing_Package::insert_package( $package_data );
 
 			if ( ! $package_id || is_wp_error( $package_id ) ) {
+				/* translators: %s: plan title */
 				$this->log( sprintf( __( 'Failed to import plan: %s', 'geodir-converter' ), $product_title ), 'error' );
 				++$failed;
 			} else {
 				$log_message = $existing_package
+					/* translators: %s: plan title */
 					? sprintf( __( 'Updated plan: %s', 'geodir-converter' ), $product_title )
+					/* translators: %s: plan title */
 					: sprintf( __( 'Imported new plan: %s', 'geodir-converter' ), $product_title );
 
 				$this->log( $log_message );
@@ -733,9 +748,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Import categories from eDirectory to GeoDirectory.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_categories( $task ) {
 		$offset   = isset( $task['offset'] ) ? absint( $task['offset'] ) : 0;
@@ -780,7 +797,8 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 			}
 
 			$total_categories = count( $categories );
-			$this->log( sprintf( esc_html__( 'Importing %1$d %2$s categories.', 'geodir-converter' ), $total_categories, $module ), 'info' );
+			/* translators: %1$d: number of categories, %2$s: module name */
+			$this->log( sprintf( __( 'Importing %1$d %2$s categories.', 'geodir-converter' ), $total_categories, $module ), 'info' );
 
 			// Merge categories from all modules.
 			if ( ! isset( $module_categories[ $taxonomy ] ) ) {
@@ -794,7 +812,7 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $module_categories ),
 					0
 				),
@@ -811,18 +829,16 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 			foreach ( $categories as $category ) {
 				$result = $this->import_single_category( $category, 0, $taxonomy );
 
+				$this->process_import_result( $result, 'category', isset( $category['title'] ) ? $category['title'] : '', isset( $category['id'] ) ? $category['id'] : 0 );
+
 				if ( GeoDir_Converter_Importer::IMPORT_STATUS_SUCCESS === $result ) {
 					++$imported;
-					$this->increase_succeed_imports( 1 );
 				} elseif ( GeoDir_Converter_Importer::IMPORT_STATUS_UPDATED === $result ) {
 					++$updated;
-					$this->increase_succeed_imports( 1 );
 				} elseif ( GeoDir_Converter_Importer::IMPORT_STATUS_SKIPPED === $result ) {
 					++$skipped;
-					$this->increase_skipped_imports( 1 );
 				} elseif ( GeoDir_Converter_Importer::IMPORT_STATUS_FAILED === $result ) {
 					++$failed;
-					$this->increase_failed_imports( 1 );
 				}
 			}
 		}
@@ -835,11 +851,13 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Recursively import a category and its children.
 	 *
-	 * @param array  $category          Category data from API.
-	 * @param int    $parent_term_id    WP parent term ID (0 for top-level).
-	 * @param string $taxonomy          The taxonomy to import into.
+	 * @since 2.0.2
 	 *
-	 * @return int Status of import: imported|updated|skipped|failed
+	 * @param array  $category       Category data from API.
+	 * @param int    $parent_term_id WP parent term ID (0 for top-level).
+	 * @param string $taxonomy       The taxonomy to import into.
+	 *
+	 * @return int Import status constant.
 	 */
 	protected function import_single_category( $category, $parent_term_id, $taxonomy ) {
 		$external_id = isset( $category['id'] ) ? absint( $category['id'] ) : 0;
@@ -906,8 +924,10 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	 * Import fields from eDirectory to GeoDirectory.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param array $task Task details.
-	 * @return array Result of the import operation.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_fields( array $task ) {
 		$imported    = isset( $task['imported'] ) ? absint( $task['imported'] ) : 0;
@@ -973,10 +993,13 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Import a single field.
 	 *
-	 * @param array  $field The field to import.
-	 * @param string $post_type The post type to import the field for.
+	 * @since 2.0.2
+	 *
+	 * @param array  $field       The field to import.
+	 * @param string $post_type   The post type to import the field for.
 	 * @param array  $package_ids The package IDs to import the field for.
-	 * @return string The import status.
+	 *
+	 * @return int Import status constant.
 	 */
 	private function import_single_field( $field, $post_type, $package_ids = array() ) {
 		global $plugin_prefix;
@@ -1066,7 +1089,9 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	 * Get standard fields.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param string $post_type The post type to get the fields for.
+	 *
 	 * @return array Array of standard fields.
 	 */
 	private function get_fields( $post_type ) {
@@ -1328,11 +1353,13 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import listings from eDirectory to GeoDirectory.
+	 * Parse listings from eDirectory and queue import tasks.
 	 *
 	 * @since 2.0.2
-	 * @param array $task The offset to start importing from.
-	 * @return array Result of the import operation.
+	 *
+	 * @param array $task The current import task.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_parse_listings( array $task ) {
 		$offset         = isset( $task['offset'], $task['total_listings'] ) ? (int) $task['offset'] : 1;
@@ -1479,14 +1506,12 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 
 		foreach ( $responses as $listing_id => $response ) {
 			if ( is_wp_error( $response ) || empty( $response->url ) ) {
-				$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'Listings', is_wp_error( $response ) ? $response->get_error_message() : __( 'Unknown error', 'geodir-converter' ) ), 'danger' );
-				$this->increase_failed_imports( 1 );
+				$this->process_import_result( self::IMPORT_STATUS_FAILED, 'listing', "Listing #{$listing_id}", $listing_id );
 				continue;
 			}
 
 			if ( ! isset( $listings[ $listing_id ] ) ) {
-				$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'Listings', $response->url ), 'warning' );
-				$this->increase_failed_imports( 1 );
+				$this->process_import_result( self::IMPORT_STATUS_FAILED, 'listing', "Listing #{$listing_id}", $listing_id );
 				continue;
 			}
 
@@ -1496,8 +1521,7 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 			$method  = "import_single_{$module}";
 
 			if ( ! method_exists( $this, $method ) ) {
-				$this->log( sprintf( self::LOG_TEMPLATE_FAILED, $module, $title ), 'warning' );
-				$this->increase_failed_imports( 1 );
+				$this->process_import_result( self::IMPORT_STATUS_FAILED, $module, $title, $listing['id'] );
 				continue;
 			}
 
@@ -1505,8 +1529,7 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 			$data          = isset( $response_data['data'] ) ? $response_data['data'] : array();
 
 			if ( ! isset( $data['id'], $data['title'], $data['detail_url'] ) ) {
-				$this->log( sprintf( self::LOG_TEMPLATE_FAILED, $module, $title ), 'warning' );
-				$this->increase_failed_imports( 1 );
+				$this->process_import_result( self::IMPORT_STATUS_FAILED, $module, $title, $listing['id'] );
 				continue;
 			}
 
@@ -1521,39 +1544,24 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 
 			$status = $this->$method( $data, $category_mapping, $packages_mapping );
 
-			switch ( $status ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					$template = self::IMPORT_STATUS_SUCCESS === $status ? self::LOG_TEMPLATE_SUCCESS : self::LOG_TEMPLATE_UPDATED;
-					$this->log( sprintf( $template, $module, $title ), 'success' );
-					$this->increase_succeed_imports( 1 );
-					break;
-
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, $module, $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-
-				case self::IMPORT_STATUS_FAILED:
-				default:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, $module, $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
-			}
+			$this->process_import_result( $status, $module, $title, $listing['id'] );
 		}
+
+		$this->flush_failed_items();
 
 		return false;
 	}
 
 	/**
-	 * Import listings from eDirectory to GeoDirectory.
+	 * Import a single listing from eDirectory to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $listing The offset to start importing from.
+	 *
+	 * @param array $listing          The listing data from the API.
 	 * @param array $category_mapping The category mapping.
 	 * @param array $packages_mapping The packages mapping.
 	 *
-	 * @return array Result of the import operation.
+	 * @return int Import status constant.
 	 */
 	public function import_single_listing( $listing, $category_mapping, $packages_mapping ) {
 		$post_type    = $this->get_import_post_type();
@@ -1750,17 +1758,20 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import events from eDirectory to GeoDirectory.
+	 * Import a single event from eDirectory to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $event The offset to start importing from.
+	 *
+	 * @param array $event            The event data from the API.
 	 * @param array $category_mapping The category mapping.
 	 * @param array $packages_mapping The packages mapping.
-	 * @return array Result of the import operation.
+	 *
+	 * @return int Import status constant.
 	 */
 	public function import_single_event( $event, $category_mapping, $packages_mapping ) {
 		// Abort early if events addon is not installed.
 		if ( ! class_exists( 'GeoDir_Event_Manager' ) ) {
+			/* translators: %s: event title */
 			$this->log( sprintf( __( 'Events addon is not active. Skipping event: %s', 'geodir-converter' ), $event['title'] ), 'error' );
 			return self::IMPORT_STATUS_SKIPPED;
 		}
@@ -1946,11 +1957,13 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import blogs from eDirectory to GeoDirectory.
+	 * Parse blogs from eDirectory and queue import tasks.
 	 *
 	 * @since 2.0.2
-	 * @param array $task The offset to start importing from.
-	 * @return array Result of the import operation.
+	 *
+	 * @param array $task The current import task.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_parse_blogs( array $task ) {
 		$offset      = isset( $task['offset'], $task['total_blogs'] ) ? (int) $task['offset'] : 1;
@@ -2039,13 +2052,14 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import blogs from eDirectory to GeoDirectory.
+	 * Import a single blog post from eDirectory to WordPress.
 	 *
 	 * @since 2.0.2
-	 * @param array $blog The offset to start importing from.
+	 *
+	 * @param array $blog             The blog data from the API.
 	 * @param array $category_mapping The category mapping.
 	 *
-	 * @return array Result of the import operation.
+	 * @return int Import status constant.
 	 */
 	public function import_single_blog( $blog, $category_mapping ) {
 		$wp_author_id = (int) $this->get_import_setting( 'wp_author_id', 1 );
@@ -2130,9 +2144,12 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Get existing package based on eDirectory product ID or find a suitable free package.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string  $post_type     The post type associated with the package.
 	 * @param string  $product_id    The product ID.
 	 * @param boolean $free_fallback Whether to fallback to a free package if no match is found.
+	 *
 	 * @return object|null The existing package object if found, or null otherwise.
 	 */
 	private function get_existing_package( $post_type, $product_id, $free_fallback = true ) {
@@ -2174,9 +2191,12 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Parse weekly hours and convert to JSON-compatible business hour format.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $hours_string Raw weekly hours string.
 	 * @param string $timezone     Timezone identifier (e.g., 'Pacific/Fiji').
-	 * @return string JSON-formatted weekly hours with UTC offset.
+	 *
+	 * @return string|WP_Error JSON-formatted weekly hours with UTC offset or WP_Error on failure.
 	 */
 	private function parse_business_hours( $hours_string, $timezone = 'UTC' ) {
 		if ( empty( $hours_string ) || ! is_string( $hours_string ) ) {
@@ -2250,8 +2270,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	 *
 	 * Supports phrases like "Every Monday, Tuesday and Wednesday".
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $phrase Recurring phrase describing weekdays.
-	 * @return int[] Array of numeric weekdays in 0-6 format.
+	 *
+	 * @return array Parsed recurring data with type, ordinals, days, and month.
 	 */
 	private function parse_recurring_phrase( string $phrase ) {
 		$phrase = strtolower( trim( $phrase ) );
@@ -2341,11 +2364,13 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get listing images.
+	 * Import listing gallery images.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param array $images The images to import.
-	 * @return string Gallery images string.
+	 *
+	 * @return string Formatted gallery images string.
 	 */
 	private function import_listing_images( $images ) {
 		$image_ids = array();
@@ -2377,7 +2402,10 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	 * Input:  https://edirectory.com/event/test-event.html
 	 * Output: test-event
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $url The full detail URL.
+	 *
 	 * @return string|null The extracted slug or null on failure.
 	 */
 	private function extract_slug_from_url( $url ) {
@@ -2401,8 +2429,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Downloads and replaces image URLs from a specific base URL in HTML content.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $content  HTML content to process.
 	 * @param string $base_url Base URL to match (e.g., https://example.com/).
+	 *
 	 * @return string Updated content with local image URLs.
 	 */
 	protected function import_images_from_content( $content, $base_url ) {
@@ -2426,8 +2457,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Extract image URLs from content that match a given base URL.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $content  The HTML content.
 	 * @param string $base_url The base URL to match.
+	 *
 	 * @return array Array of matched image URLs.
 	 */
 	protected function extract_image_urls( $content, $base_url ) {
@@ -2442,8 +2476,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Replaces links in content with local links.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $content  The HTML content.
 	 * @param string $base_url The base URL to match.
+	 *
 	 * @return string Updated content with local links.
 	 */
 	protected function replace_links( $content, $base_url ) {
@@ -2482,10 +2519,13 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Map eDirectory field type to GeoDirectory field type.
+	 * Map eDirectory field type to GeoDirectory data type.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $field_type The eDirectory field type.
-	 * @return string|false The GeoDirectory field type or false if not supported.
+	 *
+	 * @return string The GeoDirectory data type.
 	 */
 	private function map_data_type( $field_type ) {
 		switch ( $field_type ) {
@@ -2510,9 +2550,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Make an API GET request.
 	 *
-	 * @param string $endpoint  API endpoint path.
-	 * @param array  $args      Query parameters.
-	 * @param array  $options   Request options.
+	 * @since 2.0.2
+	 *
+	 * @param string $endpoint API endpoint path.
+	 * @param array  $args     Query parameters.
+	 * @param array  $options  Request options.
 	 *
 	 * @return array|WP_Error Response data or error.
 	 */
@@ -2521,9 +2563,11 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Make a POST request.
+	 * Make an API POST request.
 	 *
-	 * @param string $endpoint API endpoint.
+	 * @since 2.0.2
+	 *
+	 * @param string $endpoint API endpoint path.
 	 * @param array  $data     Post body.
 	 * @param array  $args     Query parameters.
 	 * @param array  $options  Request options.
@@ -2536,6 +2580,8 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 
 	/**
 	 * Make an API request.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $method   HTTP method (GET, POST, etc).
 	 * @param string $endpoint API endpoint path.
@@ -2622,6 +2668,8 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	/**
 	 * Build the full URL for an API request.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $endpoint API endpoint path.
 	 * @param array  $args     Query parameters.
 	 *
@@ -2644,10 +2692,13 @@ class GeoDir_Converter_EDirectory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Detect module type based on headers.
+	 * Detect module type based on CSV headers.
 	 *
-	 * @param array $headers The headers.
-	 * @return string The module type.
+	 * @since 2.0.2
+	 *
+	 * @param array $headers The CSV column headers.
+	 *
+	 * @return string|null The module type or null if unable to determine.
 	 */
 	public function detect_module_type( $headers ) {
 		// Count event and listing specific headers.

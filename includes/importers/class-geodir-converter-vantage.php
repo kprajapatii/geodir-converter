@@ -17,7 +17,7 @@ use GeoDir_Media;
 use WPInv_Invoice;
 use GetPaid_Form_Item;
 use GeoDir_Pricing_Package;
-use GeoDir_Converter\GeoDir_Converter_Utils;
+
 use GeoDir_Converter\Abstracts\GeoDir_Converter_Importer;
 
 defined( 'ABSPATH' ) || exit;
@@ -120,27 +120,19 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Initialize hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	protected function init() {
 	}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'Vantage', 'geodir-converter' );
@@ -149,7 +141,9 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings, events, users and invoices from your Vantage installation.', 'geodir-converter' );
@@ -158,7 +152,9 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer icon URL.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/vantage.png';
@@ -167,7 +163,9 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The first import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_CATEGORIES;
@@ -175,6 +173,10 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		?>
@@ -206,10 +208,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 						
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -217,10 +216,11 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
-	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -243,9 +243,10 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Get next task.
 	 *
-	 * @param array $task The current task.
-	 * @param bool  $reset_offset Whether to reset the offset.
+	 * @since 2.0.2
 	 *
+	 * @param array $task         The current task.
+	 * @param bool  $reset_offset Whether to reset the offset.
 	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function next_task( $task, $reset_offset = false ) {
@@ -278,6 +279,10 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		global $wpdb;
@@ -309,12 +314,12 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import categories from Listify to GeoDirectory.
+	 * Import categories from Vantage to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 */
 	public function task_import_categories( $task ) {
 		global $wpdb;
@@ -323,10 +328,10 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 		$this->set_import_total();
 
 		// Log import started.
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 
 		if ( 0 === (int) wp_count_terms( self::TAX_LISTING_CATEGORY ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task, true );
 		}
 
@@ -343,15 +348,16 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $categories ) || is_wp_error( $categories ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task, true );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $categories ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -368,7 +374,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-				esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -379,15 +385,17 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import tags.
+	 * Import tags from Vantage to GeoDirectory.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $task Task details.
-	 * @return array Updated task details.
+	 * @return array|false Updated task details or false if import is complete.
 	 */
 	public function task_import_tags( array $task ) {
 		global $wpdb;
 
-		$this->log( esc_html__( 'Tags: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Tags: Import started.', 'geodir-converter' ) );
 
 		$post_type = $this->get_import_post_type();
 
@@ -402,15 +410,16 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $tags ) || is_wp_error( $tags ) ) {
-			$this->log( esc_html__( 'Tags: No items to import.', 'geodir-converter' ), 'notice' );
+			$this->log( __( 'Tags: No items to import.', 'geodir-converter' ), 'notice' );
 			return $this->next_task( $task, true );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $tags ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $tags ),
 					0
 				),
@@ -427,7 +436,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 			/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-				esc_html__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -438,16 +447,17 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import fields from Listify to GeoDirectory.
+	 * Import fields from Vantage to GeoDirectory.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param array $task Task details.
-	 * @return array Result of the import operation.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 */
 	public function task_import_fields( array $task ) {
 		global $plugin_prefix;
 
-		$this->log( esc_html__( 'Importing fields...', 'geodir-converter' ) );
+		$this->log( __( 'Importing fields...', 'geodir-converter' ) );
 
 		$imported  = isset( $task['imported'] ) ? absint( $task['imported'] ) : 0;
 		$failed    = isset( $task['failed'] ) ? absint( $task['failed'] ) : 0;
@@ -457,7 +467,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 		$post_type = $this->get_import_post_type();
 
 		if ( empty( $fields ) ) {
-			$this->log( esc_html__( 'No fields found for import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'No fields found for import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task, true );
 		}
 
@@ -471,6 +481,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 			// Skip fields that shouldn't be imported.
 			if ( in_array( $field['id'], $skip_keys, true ) ) {
 				++$skipped;
+				/* translators: %s: field label */
 				$this->log( sprintf( __( 'Skipped field: %s', 'geodir-converter' ), $field['props']['label'] ), 'warning' );
 				continue;
 			}
@@ -480,6 +491,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 			// Skip fields that shouldn't be imported.
 			if ( $this->should_skip_field( $gd_field['htmlvar_name'] ) ) {
 				++$skipped;
+				/* translators: %s: field label */
 				$this->log( sprintf( __( 'Skipped field: %s', 'geodir-converter' ), $field['props']['label'] ), 'warning' );
 				continue;
 			}
@@ -495,7 +507,8 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 				$column_exists ? ++$updated : ++$imported;
 			} else {
 				++$failed;
-				$this->log( sprintf( __( 'Failed to import field: %s', 'geodir-converter' ), $field['props']['label'] ), 'error' );
+				/* translators: %s: field label */
+			$this->log( sprintf( __( 'Failed to import field: %s', 'geodir-converter' ), $field['props']['label'] ), 'error' );
 			}
 		}
 
@@ -505,6 +518,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: skipped count, %4$d: failed count */
 				__( 'Fields import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -518,10 +532,12 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import packages.
+	 * Import packages from Vantage to GeoDirectory.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $task Import task details.
-	 * @return array Updated task with the next action.
+	 * @return array|false Updated task with the next action or false if import is complete.
 	 */
 	public function task_import_packages( array $task ) {
 		global $wpdb;
@@ -581,9 +597,11 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 		}
 
 		foreach ( $plans as $plan ) {
-			$plan = get_post( $plan->ID );
+			$plan_title = $plan->post_title;
+			$plan       = get_post( $plan->ID );
 			if ( ! $plan ) {
-				$this->log( sprintf( __( 'Failed to import plan: %s', 'geodir-converter' ), $plan->post_title ), 'error' );
+				/* translators: %s: plan title */
+			$this->log( sprintf( __( 'Failed to import plan: %s', 'geodir-converter' ), $plan_title ), 'error' );
 				++$failed;
 				continue;
 			}
@@ -631,16 +649,24 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 				$package_data['id'] = absint( $existing_package->id );
 			}
 
+			if ( $this->is_test_mode() ) {
+				$existing_package ? ++$skipped : ++$imported;
+				continue;
+			}
+
 			// Prepare and insert/update package.
 			$package_data = GeoDir_Pricing_Package::prepare_data_for_save( $package_data );
 			$package_id   = GeoDir_Pricing_Package::insert_package( $package_data );
 
 			if ( ! $package_id || is_wp_error( $package_id ) ) {
-				$this->log( sprintf( __( 'Failed to import plan: %s', 'geodir-converter' ), $plan_label ), 'error' );
+				/* translators: %s: plan name */
+			$this->log( sprintf( __( 'Failed to import plan: %s', 'geodir-converter' ), $plan_label ), 'error' );
 				++$failed;
 			} else {
 				$log_message = $existing_package
+				/* translators: %s: plan name */
 				? sprintf( __( 'Updated plan: %s', 'geodir-converter' ), $plan_label )
+				/* translators: %s: plan name */
 				: sprintf( __( 'Imported new plan: %s', 'geodir-converter' ), $plan_label );
 
 				$this->log( $log_message );
@@ -659,6 +685,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: failed count */
 				__( 'Plans import completed: %1$d imported, %2$d updated, %3$d failed.', 'geodir-converter' ),
 				$imported,
 				$skipped,
@@ -671,11 +698,13 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get existing package based on BDP package ID or find a suitable free package.
+	 * Get existing package based on Vantage package ID or find a suitable free package.
 	 *
-	 * @param string  $post_type     The post type associated with the package.
-	 * @param int     $vantage_plan_id    The Vantage package ID.
-	 * @param boolean $free_fallback Whether to fallback to a free package if no match is found.
+	 * @since 2.0.2
+	 *
+	 * @param string $post_type        The post type associated with the package.
+	 * @param int    $vantage_plan_id  The Vantage package ID.
+	 * @param bool   $free_fallback    Whether to fallback to a free package if no match is found.
 	 * @return object|null The existing package object if found, or null otherwise.
 	 */
 	private function get_existing_package( $post_type, $vantage_plan_id, $free_fallback = true ) {
@@ -712,10 +741,11 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get standard fields.
+	 * Get standard and custom fields.
 	 *
 	 * @since 2.0.2
-	 * @return array Array of standard fields.
+	 *
+	 * @return array Array of standard and custom fields.
 	 */
 	private function get_fields() {
 		$standard_fields = array(
@@ -876,14 +906,15 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Convert BDP field to GD field.
+	 * Convert Vantage field to GeoDirectory field.
 	 *
 	 * @since 2.0.2
-	 * @param string $key       The field key.
-	 * @param array  $field     The BDP field data.
-	 * @param string $post_type The post type.
-	 * @param array  $package_ids   The package data.
-	 * @return array|false The GD field data or false if conversion fails.
+	 *
+	 * @param string $key         The field key.
+	 * @param array  $field       The Vantage field data.
+	 * @param string $post_type   The post type.
+	 * @param array  $package_ids The package IDs.
+	 * @return array The GeoDirectory field data.
 	 */
 	private function prepare_single_field( $key, $field, $post_type, $package_ids = array() ) {
 		$field         = $this->normalize_vantage_field( $field );
@@ -953,6 +984,8 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Get the corresponding GD field key for a given shortname.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $shortname The field shortname.
 	 * @return string The mapped field key or the original shortname if no match is found.
 	 */
@@ -970,10 +1003,12 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Map PMD field type to GeoDirectory field type.
+	 * Map Vantage field type to GeoDirectory field type.
 	 *
-	 * @param string $field_type The PMD field type.
-	 * @return string|false The GeoDirectory field type or false if not supported.
+	 * @since 2.0.2
+	 *
+	 * @param string $field_type The Vantage field type.
+	 * @return string The GeoDirectory field type.
 	 */
 	private function map_field_type( $field_type ) {
 		switch ( $field_type ) {
@@ -1000,10 +1035,12 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Map PMD field type to GeoDirectory field type.
+	 * Map Vantage field type to GeoDirectory data type.
 	 *
-	 * @param string $field_type The PMD field type.
-	 * @return string|false The GeoDirectory field type or false if not supported.
+	 * @since 2.0.2
+	 *
+	 * @param string $field_type The Vantage field type.
+	 * @return string The GeoDirectory data type.
 	 */
 	private function map_data_type( $field_type ) {
 		switch ( $field_type ) {
@@ -1024,6 +1061,8 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 
 	/**
 	 * Normalize and set default values for a given field.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $field Field values to normalize.
 	 * @return array Normalized field values.
@@ -1052,11 +1091,12 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import listings from Listify to GeoDirectory.
+	 * Parse listings from Vantage and queue them for import.
 	 *
 	 * @since 2.0.2
-	 * @param array $task The offset to start importing from.
-	 * @return array Result of the import operation.
+	 *
+	 * @param array $task Import task details.
+	 * @return array|false Result of the parsing operation or false if complete.
 	 */
 	public function task_parse_listings( array $task ) {
 		global $wpdb;
@@ -1123,8 +1163,9 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	 * Import listings from Vantage to GeoDirectory.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param array $task The task to import.
-	 * @return array Result of the import operation.
+	 * @return false Always returns false to indicate task completion.
 	 */
 	public function task_import_listings( $task ) {
 		$post_ids = isset( $task['post_ids'] ) && ! empty( $task['post_ids'] ) ? (array) $task['post_ids'] : array();
@@ -1151,48 +1192,32 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 			$title  = $listing->post_title;
 			$result = $this->import_single_listing( $listing );
 
-			switch ( $result['status'] ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					if ( self::IMPORT_STATUS_SUCCESS === $result['status'] ) {
-						$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'listing', $title ), 'success' );
-						$this->increase_succeed_imports( 1 );
-					} else {
-						$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'listing', $title ), 'warning' );
-						$this->increase_succeed_imports( 1 );
-					}
+			$this->process_import_result( $result['status'], 'listing', $title, $listing->ID );
 
-					// Update listings mapping.
-					$mapping[ (int) $listing->ID ] = array(
-						'gd_post_id'    => $result['gd_post_id'],
-						'gd_package_id' => $result['gd_package_id'],
-					);
-					break;
-
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-
-				case self::IMPORT_STATUS_FAILED:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
+			// Update listings mapping.
+			if ( in_array( $result['status'], array( self::IMPORT_STATUS_SUCCESS, self::IMPORT_STATUS_UPDATED ), true ) ) {
+				$mapping[ (int) $listing->ID ] = array(
+					'gd_post_id'    => $result['gd_post_id'],
+					'gd_package_id' => $result['gd_package_id'],
+				);
 			}
 		}
 
 		// Update listings mapping.
 		$this->options_handler->update_option( 'listings_mapping', $mapping );
 
+		$this->flush_failed_items();
+
 		return false;
 	}
 
 	/**
-	 * Convert a single Listify listing to GeoDirectory format.
+	 * Convert a single Vantage listing to GeoDirectory format.
 	 *
 	 * @since 2.0.2
-	 * @param  object $post The post to convert.
-	 * @return array|int Converted listing data or import status.
+	 *
+	 * @param object $post The post to convert.
+	 * @return array Import result with status and optional post/package IDs.
 	 */
 	private function import_single_listing( $post ) {
 		// Check if the post has already been imported.
@@ -1217,17 +1242,15 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 		$has_coordinates = isset( $coord->lat, $coord->lng ) && ! empty( $coord->lat ) && ! empty( $coord->lng );
 
 		if ( $has_coordinates ) {
-			$this->log( 'Pulling listing address from coordinates: ' . $coord->lat . ', ' . $coord->lng, 'info' );
-			$location_lookup = GeoDir_Converter_Utils::get_location_from_coords( $coord->lat, $coord->lng );
+			$location['latitude']  = $coord->lat;
+			$location['longitude'] = $coord->lng;
+			$location = $this->geocode_location( $coord->lat, $coord->lng, $location, $post->ID );
 
-			if ( ! is_wp_error( $location_lookup ) ) {
-				$address  = isset( $location_lookup['address'] ) && ! empty( $location_lookup['address'] ) ? $location_lookup['address'] : $address;
-				$location = array_merge( $location, $location_lookup );
+			if ( isset( $location['address'] ) && ! empty( $location['address'] ) ) {
+				$address = $location['address'];
 			}
 		} else {
 			$address               = isset( $post_meta['geo_street'] ) && ! empty( $post_meta['geo_street'] ) ? $post_meta['geo_street'] : $address;
-			$location['latitude']  = $has_coordinates ? $coord->lat : $location['latitude'];
-			$location['longitude'] = $has_coordinates ? $coord->lng : $location['longitude'];
 			$location['city']      = isset( $post_meta['geo_city'] ) && ! empty( $post_meta['geo_city'] ) ? $post_meta['geo_city'] : $location['city'];
 			$location['region']    = isset( $post_meta['geo_state_long'] ) && ! empty( $post_meta['geo_state_long'] ) ? $post_meta['geo_state_long'] : $location['region'];
 			$location['country']   = isset( $post_meta['geo_country_long'] ) && ! empty( $post_meta['geo_country_long'] ) ? $post_meta['geo_country_long'] : $location['country'];
@@ -1388,10 +1411,12 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Parse payments.
+	 * Parse payments from Vantage and queue them for import.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $task Import task details.
-	 * @return array Updated task with the next action.
+	 * @return array|false Updated task with the next action or false if complete.
 	 */
 	public function task_parse_payments( array $task ) {
 		global $wpdb;
@@ -1463,8 +1488,9 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	 * Import payments from Vantage to GeoDirectory.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param array $task The task to import.
-	 * @return array Result of the import operation.
+	 * @return false Always returns false to indicate task completion.
 	 */
 	public function task_import_payments( $task ) {
 		global $wpdb;
@@ -1522,9 +1548,12 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 				case self::IMPORT_STATUS_FAILED:
 					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'invoice', "INV-{$payment_id}" ), 'warning' );
 					$this->increase_failed_imports( 1 );
+					$this->record_failed_item( $payment_id, self::ACTION_IMPORT_PAYMENTS, 'invoice', "INV-{$payment_id}", sprintf( self::LOG_TEMPLATE_FAILED, 'invoice', "INV-{$payment_id}" ) );
 					break;
 			}
 		}
+
+		$this->flush_failed_items();
 
 		return false;
 	}
@@ -1532,9 +1561,11 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Import a single payment.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param object $payment The payment to import.
 	 * @param array  $mapping The listings mapping.
-	 * @return bool True on success, false on failure.
+	 * @return int Import status constant (IMPORT_STATUS_SUCCESS, IMPORT_STATUS_UPDATED, or IMPORT_STATUS_FAILED).
 	 */
 	private function import_single_payment( $payment, $mapping ) {
 		$vantage_options = (array) get_option( 'va_options', array() );
@@ -1664,6 +1695,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	 * Get the featured image URL.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param int $post_id The post ID.
 	 * @return string The featured image URL.
 	 */
@@ -1676,8 +1708,9 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	 * Get gallery images from Vantage format.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param string|array $media The Vantage media format.
-	 * @return array The images in the Geodirectory format.
+	 * @return string|array The images in the GeoDirectory format or empty string if none.
 	 */
 	private function get_gallery_images( $media ) {
 		$image_ids = maybe_unserialize( $media );
@@ -1713,9 +1746,11 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Get the listing coordinates.
 	 *
-	 * @param int  $post_id The post ID.
+	 * @since 2.0.2
+	 *
+	 * @param int  $post_id          The post ID.
 	 * @param bool $fallback_to_zero Whether to fallback to zero coordinates if none found.
-	 * @return object The coordinates.
+	 * @return object|null The coordinates object with lat and lng properties.
 	 */
 	private function get_listing_coordinates( $post_id, $fallback_to_zero = true ) {
 		global $wpdb;
@@ -1742,7 +1777,9 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	/**
 	 * Process form fields and extract values from post meta.
 	 *
-	 * @param object $post The post object.
+	 * @since 2.0.2
+	 *
+	 * @param object $post      The post object.
 	 * @param array  $post_meta The post meta data.
 	 * @return array The processed fields.
 	 */
@@ -1775,8 +1812,9 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	 * Retrieves the current post's categories.
 	 *
 	 * @since 2.0.2
-	 * @param int    $post_id The post ID.
-	 * @param string $taxonomy The taxonomy to query for.
+	 *
+	 * @param int    $post_id     The post ID.
+	 * @param string $taxonomy    The taxonomy to query for.
 	 * @param string $return_type Determines whether to return IDs or names.
 	 * @return array An array of category IDs or names based on the $return_type.
 	 */
@@ -1816,6 +1854,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	 * Counts the number of listings.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @return int The number of listings.
 	 */
 	private function count_listings() {
@@ -1837,6 +1876,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	 * Counts the number of plans.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @return int The number of plans.
 	 */
 	private function count_plans() {
@@ -1851,6 +1891,7 @@ class GeoDir_Converter_Vantage extends GeoDir_Converter_Importer {
 	 * Counts the number of payments.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @return int The number of payments.
 	 */
 	private function count_payments() {

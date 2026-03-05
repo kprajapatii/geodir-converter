@@ -242,6 +242,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	 * Initialize hooks.
 	 *
 	 * @since 2.1.4
+	 *
+	 * @return void
 	 */
 	protected function init() {
 	}
@@ -259,6 +261,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	/**
 	 * Check if a field should be skipped during import.
 	 *
+	 * @since 2.1.4
+	 *
 	 * @param string $field_name The field name to check.
 	 * @return bool True if the field should be skipped, false otherwise.
 	 */
@@ -275,21 +279,11 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.1.4
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'Listing Pro', 'geodir-converter' );
@@ -298,7 +292,9 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.1.4
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings from your Listing Pro theme installation.', 'geodir-converter' );
@@ -307,7 +303,9 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.1.4
+	 *
+	 * @return string The importer icon URL.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/listingpro.jpeg';
@@ -316,7 +314,9 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.1.4
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_CATEGORIES;
@@ -324,6 +324,10 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.1.4
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		?>
@@ -372,10 +376,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 						
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -383,10 +384,11 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.1.4
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
-	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings, or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -414,9 +416,10 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	/**
 	 * Get next task.
 	 *
-	 * @param array $task The current task.
-	 * @param bool  $reset_offset Whether to reset the offset.
+	 * @since 2.1.4
 	 *
+	 * @param array $task         The current task.
+	 * @param bool  $reset_offset Whether to reset the offset.
 	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function next_task( $task, $reset_offset = false ) {
@@ -450,6 +453,10 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.1.4
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		global $wpdb;
@@ -899,11 +906,11 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	 */
 	public function task_import_categories( $task ) {
 		global $wpdb;
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 		$this->set_import_total();
 
 		if ( 0 === intval( wp_count_terms( self::TAX_LISTING_CATEGORY ) ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -920,15 +927,16 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $categories ) || is_wp_error( $categories ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $categories ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -945,7 +953,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-				esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -965,10 +973,10 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	 */
 	public function task_import_tags( $task ) {
 		global $wpdb;
-		$this->log( esc_html__( 'Tags: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Tags: Import started.', 'geodir-converter' ) );
 
 		if ( 0 === intval( wp_count_terms( self::TAX_LISTING_TAG ) ) ) {
-			$this->log( esc_html__( 'Tags: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Tags: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -985,15 +993,16 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $tags ) || is_wp_error( $tags ) ) {
-			$this->log( esc_html__( 'Tags: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Tags: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $tags ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $tags ),
 					0
 				),
@@ -1010,7 +1019,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-				esc_html__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -1030,10 +1039,10 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	 */
 	public function task_import_features( $task ) {
 		global $wpdb;
-		$this->log( esc_html__( 'Features: Creating multiselect field...', 'geodir-converter' ) );
+		$this->log( __( 'Features: Creating multiselect field...', 'geodir-converter' ) );
 
 		if ( 0 === intval( wp_count_terms( self::TAX_LISTING_FEATURES ) ) ) {
-			$this->log( esc_html__( 'Features: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Features: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -1053,7 +1062,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $features ) || is_wp_error( $features ) ) {
-			$this->log( esc_html__( 'Features: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Features: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -1064,7 +1073,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		if ( $this->is_test_mode() ) {
 			$this->log(
 				sprintf(
-					esc_html__( 'Features: Field would be %1$s with %2$d options.', 'geodir-converter' ),
+					/* translators: %1$s: action (created/updated), %2$d: number of options */
+					__( 'Features: Field would be %1$s with %2$d options.', 'geodir-converter' ),
 					$existing_field ? 'updated' : 'created',
 					count( $features )
 				),
@@ -1114,12 +1124,13 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		$result = geodir_custom_field_save( $field );
 
 		if ( is_wp_error( $result ) ) {
-			$this->log( esc_html__( 'Features: Failed to create/update field.', 'geodir-converter' ), 'error' );
+			$this->log( __( 'Features: Failed to create/update field.', 'geodir-converter' ), 'error' );
 			$this->increase_failed_imports( 1 );
 		} else {
 			$this->log(
 				sprintf(
-					esc_html__( 'Features: Field %1$s successfully with %2$d options.', 'geodir-converter' ),
+					/* translators: %1$s: action (created/updated), %2$d: number of options */
+					__( 'Features: Field %1$s successfully with %2$d options.', 'geodir-converter' ),
 					$existing_field ? 'updated' : 'created',
 					count( $features )
 				),
@@ -1139,7 +1150,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	 * @return array Result of the import operation.
 	 */
 	public function task_import_fields( array $task ) {
-		$this->log( esc_html__( 'Importing standard fields...', 'geodir-converter' ) );
+		$this->log( __( 'Importing standard fields...', 'geodir-converter' ) );
 
 		$fields_cpts = array( $this->get_import_post_type() );
 
@@ -1153,7 +1164,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 			$fields = $this->get_custom_fields( $post_type );
 
 			if ( empty( $fields ) ) {
-				$this->log( sprintf( __( 'No custom fields found for post type: %s', 'geodir-converter' ), $post_type ), 'warning' );
+				/* translators: %s: post type name */
+			$this->log( sprintf( __( 'No custom fields found for post type: %s', 'geodir-converter' ), $post_type ), 'warning' );
 				continue;
 			}
 
@@ -1164,7 +1176,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 
 				if ( $this->should_skip_field( $gd_field['htmlvar_name'] ) ) {
 					++$skipped;
-					$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
+					/* translators: %s: field name */
+				$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
 					continue;
 				}
 
@@ -1186,7 +1199,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 				} else {
 					++$failed;
 					$error_msg = is_wp_error( $result ) ? $result->get_error_message() : __( 'Unknown error', 'geodir-converter' );
-					$this->log( sprintf( __( 'Failed to import custom field: %1$s - %2$s', 'geodir-converter' ), $field['label'], $error_msg ), 'error' );
+					/* translators: %1$s: field name, %2$s: error message */
+				$this->log( sprintf( __( 'Failed to import custom field: %1$s - %2$s', 'geodir-converter' ), $field['label'], $error_msg ), 'error' );
 				}
 			}
 		}
@@ -1197,6 +1211,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: skipped count, %4$d: failed count */
 				__( 'Listing fields import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -1317,7 +1332,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $plans ) ) {
-			$this->log( esc_html__( 'Packages: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Packages: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -1374,12 +1389,14 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 			$package_id   = GeoDir_Pricing_Package::insert_package( $package_data );
 
 			if ( ! $package_id || is_wp_error( $package_id ) ) {
-				$this->log( sprintf( __( 'Failed to import package: %s', 'geodir-converter' ), $plan->post_title ), 'error' );
+				/* translators: %s: package title */
+			$this->log( sprintf( __( 'Failed to import package: %s', 'geodir-converter' ), $plan->post_title ), 'error' );
 				++$failed;
 			} else {
 				$is_update = ! empty( $existing_package );
 
-				$log_message = $is_update ? sprintf( __( 'Updated package: %s', 'geodir-converter' ), $plan->post_title ) : sprintf( __( 'Imported package: %s', 'geodir-converter' ), $plan->post_title );
+				/* translators: %s: package title */
+			$log_message = $is_update ? sprintf( __( 'Updated package: %s', 'geodir-converter' ), $plan->post_title ) : sprintf( __( 'Imported package: %s', 'geodir-converter' ), $plan->post_title );
 				$this->log( $log_message );
 
 				$is_update ? ++$updated : ++$imported;
@@ -1395,6 +1412,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: failed count */
 				__( 'Packages: %1$d imported, %2$d updated, %3$d failed', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -1573,7 +1591,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 					'ID'           => $zone_id,
 					'post_title'   => $zone_titles[ $mode ],
 					'post_status'  => 'publish',
-					'post_content' => sprintf( __( 'Imported from ListingPro %s campaigns', 'geodir-converter' ), $zone_titles[ $mode ] ),
+					/* translators: %s: campaign mode/zone name */
+				'post_content' => sprintf( __( 'Imported from ListingPro %s campaigns', 'geodir-converter' ), $zone_titles[ $mode ] ),
 				);
 				wp_update_post( $zone_data );
 
@@ -1587,7 +1606,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 						'post_type'    => self::GD_POST_TYPE_AD_ZONE,
 						'post_title'   => $zone_titles[ $mode ],
 						'post_status'  => 'publish',
-						'post_content' => sprintf( __( 'Imported from ListingPro %s campaigns', 'geodir-converter' ), $zone_titles[ $mode ] ),
+						/* translators: %s: campaign mode/zone name */
+					'post_content' => sprintf( __( 'Imported from ListingPro %s campaigns', 'geodir-converter' ), $zone_titles[ $mode ] ),
 					)
 				);
 
@@ -1630,7 +1650,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 			return $this->next_task( $task, true );
 		}
 
-		wp_suspend_cache_addition( false );
+		wp_suspend_cache_addition( true );
 
 		$listings = $wpdb->get_results(
 			$wpdb->prepare(
@@ -1689,28 +1709,10 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 			$title  = $listing->post_title;
 			$status = $this->import_single_listing( $listing, $packages_mapping );
 
-			switch ( $status ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					if ( self::IMPORT_STATUS_SUCCESS === $status ) {
-						$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'listing', $title ), 'success' );
-					} else {
-						$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'listing', $title ), 'warning' );
-					}
-
-					$this->increase_succeed_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_FAILED:
-				default:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
-			}
+			$this->process_import_result( $status, 'listing', $title, $listing->ID );
 		}
+
+		$this->flush_failed_items();
 
 		return false;
 	}
@@ -1748,7 +1750,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		}
 
 		if ( 0 === $offset ) {
-			$this->log( sprintf( __( 'Starting events parsing process: %d events found.', 'geodir-converter' ), $total_events ) );
+			/* translators: %d: number of events */
+		$this->log( sprintf( __( 'Starting events parsing process: %d events found.', 'geodir-converter' ), $total_events ) );
 		}
 
 		if ( 0 === $total_events ) {
@@ -1756,7 +1759,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 			return $this->next_task( $task, true );
 		}
 
-		wp_suspend_cache_addition( false );
+		wp_suspend_cache_addition( true );
 
 		$events = $wpdb->get_results(
 			$wpdb->prepare(
@@ -1813,28 +1816,10 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 			$title  = $event->post_title;
 			$status = $this->import_single_event( $event );
 
-			switch ( $status ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					if ( self::IMPORT_STATUS_SUCCESS === $status ) {
-						$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'event', $title ), 'success' );
-					} else {
-						$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'event', $title ), 'warning' );
-					}
-
-					$this->increase_succeed_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'event', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_FAILED:
-				default:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'event', $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
-			}
+			$this->process_import_result( $status, 'event', $title, $event->ID, self::ACTION_IMPORT_EVENTS );
 		}
+
+		$this->flush_failed_items();
 
 		return false;
 	}
@@ -1847,8 +1832,13 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	 * @return string Import status.
 	 */
 	private function import_single_event( $event ) {
-		$post_type   = self::GD_POST_TYPE_EVENT;
-		$post        = get_post( $event->ID );
+		$post_type = self::GD_POST_TYPE_EVENT;
+		$post      = get_post( $event->ID );
+
+		if ( ! $post ) {
+			return self::IMPORT_STATUS_FAILED;
+		}
+
 		$gd_event_id = ! $this->is_test_mode() ? $this->get_gd_listing_id( $post->ID, 'listingpro_id', $post_type ) : false;
 		$is_update   = ! empty( $gd_event_id );
 		$post_meta   = $this->get_post_meta( $post->ID );
@@ -1957,11 +1947,18 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	 * Convert a single Listing Pro listing to GeoDirectory format.
 	 *
 	 * @since 2.1.4
-	 * @param  WP_Post $listing The post object to convert.
-	 * @return array|int Converted listing data or import status.
+	 *
+	 * @param WP_Post $listing          The post object to convert.
+	 * @param array   $packages_mapping Optional. Mapping of ListingPro plan IDs to GeoDirectory package IDs.
+	 * @return string Import status constant.
 	 */
 	private function import_single_listing( $listing, $packages_mapping = array() ) {
-		$post             = get_post( $listing->ID );
+		$post = get_post( $listing->ID );
+
+		if ( ! $post ) {
+			return self::IMPORT_STATUS_FAILED;
+		}
+
 		$post_type        = $this->get_import_post_type();
 		$gd_post_id       = ! $this->is_test_mode() ? $this->get_gd_listing_id( $post->ID, 'listingpro_id', $post_type ) : false;
 		$is_update        = ! empty( $gd_post_id );
@@ -2229,20 +2226,23 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 				'comment_type'         => 'review',
 			);
 
-			if ( ! empty( $existing_review ) && isset( $existing_review[0]->comment_ID ) ) {
+			$is_existing = ! empty( $existing_review ) && isset( $existing_review[0]->comment_ID );
+
+			if ( $is_existing ) {
 				$comment_data['comment_ID'] = (int) $existing_review[0]->comment_ID;
 				$comment_id                 = wp_update_comment( $comment_data );
-				++$skipped;
 			} else {
 				$comment_id = wp_insert_comment( $comment_data );
-				++$imported;
 			}
 
 			if ( is_wp_error( $comment_id ) || ! $comment_id ) {
 				++$failed;
-				$this->log( sprintf( __( 'Failed to import review #%d', 'geodir-converter' ), $review_id ), 'error' );
+				/* translators: %d: review ID */
+			$this->log( sprintf( __( 'Failed to import review #%d', 'geodir-converter' ), $review_id ), 'error' );
 				continue;
 			}
+
+			$is_existing ? ++$skipped : ++$imported;
 
 			if ( $rating ) {
 				$_REQUEST['geodir_overallrating'] = absint( $rating );
@@ -2258,6 +2258,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		if ( $imported + $skipped > 0 ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: imported count, %2$d: skipped count, %3$d: failed count */
 					__( 'Review batch: %1$d imported, %2$d skipped, %3$d failed', 'geodir-converter' ),
 					$imported,
 					$skipped,
@@ -2345,7 +2346,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 
 			if ( self::IMPORT_STATUS_SUCCESS === $result ) {
 				++$imported;
-			} elseif ( self::IMPORT_STATUS_SKIPPED === $result ) {
+			} elseif ( self::IMPORT_STATUS_SKIPPED === $result || self::IMPORT_STATUS_UPDATED === $result ) {
 				++$skipped;
 			} else {
 				++$failed;
@@ -2355,6 +2356,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		if ( $imported > 0 || $skipped > 0 || $failed > 0 ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: imported count, %2$d: skipped count, %3$d: failed count */
 					__( 'Invoice batch: %1$d imported, %2$d skipped, %3$d failed', 'geodir-converter' ),
 					$imported,
 					$skipped,
@@ -2581,6 +2583,7 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		if ( $imported > 0 || $skipped > 0 || $failed > 0 ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: imported count, %2$d: skipped count, %3$d: failed count */
 					__( 'Ad batch: %1$d imported, %2$d skipped, %3$d failed', 'geodir-converter' ),
 					$imported,
 					$skipped,
@@ -2721,7 +2724,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 				'post_type'      => self::GD_POST_TYPE_INVOICE,
 				'post_title'     => ! empty( $campaign->transaction_id ) ? $campaign->transaction_id : 'LP-AD-' . $campaign->main_id . '-' . $zone_type,
 				'post_name'      => 'inv-lp-ad-' . $campaign->main_id . '-' . $zone_type,
-				'description'    => sprintf( __( 'Ad campaign for %s zone', 'geodir-converter' ), $zone_type ),
+				/* translators: %s: zone type */
+			'description'    => sprintf( __( 'Ad campaign for %s zone', 'geodir-converter' ), $zone_type ),
 				'status'         => $status,
 				'created_via'    => self::CREATED_VIA,
 				'date_created'   => ! empty( $campaign->ad_date ) ? date( 'Y-m-d H:i:s', strtotime( $campaign->ad_date ) ) : current_time( 'mysql' ),
@@ -2848,6 +2852,8 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 	/**
 	 * Get post images.
 	 *
+	 * @since 2.1.4
+	 *
 	 * @param array $post_meta Post meta data.
 	 * @return string Formatted gallery images string for GeoDirectory.
 	 */
@@ -2888,23 +2894,27 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		}
 
 		if ( ! empty( $images ) ) {
-			$this->log( sprintf( __( 'Processing %d gallery images', 'geodir-converter' ), count( $images ) ), 'info' );
+			/* translators: %d: number of images */
+		$this->log( sprintf( __( 'Processing %d gallery images', 'geodir-converter' ), count( $images ) ), 'info' );
 		}
 
 		if ( $invalid_count > 0 ) {
-			$this->log( sprintf( __( 'Skipped %d invalid/non-image attachments', 'geodir-converter' ), $invalid_count ), 'warning' );
+			/* translators: %d: number of skipped attachments */
+		$this->log( sprintf( __( 'Skipped %d invalid/non-image attachments', 'geodir-converter' ), $invalid_count ), 'warning' );
 		}
 
 		return $this->format_images_data( $images );
 	}
 
 	/**
-	 * Process form fields.
+	 * Process form fields and extract values from post meta.
 	 *
-	 * @param WP_Post $post Post object.
-	 * @param array   $post_meta Post meta data.
-	 * @param string  $post_type Post type.
-	 * @return array Processed fields.
+	 * @since 2.1.4
+	 *
+	 * @param WP_Post $post      The post object.
+	 * @param array   $post_meta The post meta data.
+	 * @param string  $post_type The GeoDirectory post type.
+	 * @return array Processed fields keyed by GeoDirectory field name.
 	 */
 	private function process_form_fields( $post, $post_meta, $post_type ) {
 		$fields = array();
@@ -3120,6 +3130,15 @@ class GeoDir_Converter_ListingPro extends GeoDir_Converter_Importer {
 		return $categories;
 	}
 
+	/**
+	 * Get a specific value from the ListingPro listing options meta box.
+	 *
+	 * @since 2.1.4
+	 *
+	 * @param string $name   The meta box option key to retrieve.
+	 * @param int    $postid The post ID to retrieve the meta box value from.
+	 * @return mixed The meta box value, empty string if not found, or false if no post ID.
+	 */
 	public function listing_get_metabox_by_ID( $name, $postid ) {
 		if ( $postid ) {
 			$metabox = get_post_meta( $postid, 'lp_listingpro_options', true );

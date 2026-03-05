@@ -23,9 +23,22 @@ class GeoDir_Converter_Utils {
 	const OPEN_STREET_MAP_API = 'https://nominatim.openstreetmap.org/reverse';
 
 	/**
+	 * In-memory cache for geocoding results within the same PHP process.
+	 *
+	 * Keyed by rounded coordinates so nearby listings share results.
+	 *
+	 * @var array
+	 */
+	private static $location_cache = array();
+
+	/**
 	 * Get location data (city, state, zip, country) from latitude and longitude.
 	 *
-	 * Uses Nominatim (OpenStreetMap) reverse geocoding.
+	 * Uses Nominatim (OpenStreetMap) reverse geocoding. Results are cached
+	 * by coordinates rounded to 3 decimal places (~111m precision) so
+	 * listings in the same neighbourhood share a single API call.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param float $lat Latitude.
 	 * @param float $lng Longitude.
@@ -36,11 +49,25 @@ class GeoDir_Converter_Utils {
 			return new WP_Error( 'invalid_location', esc_html__( 'Invalid latitude or longitude', 'geodir-converter' ) );
 		}
 
-		// Check cache first.
-		$cache_key = 'geodir_converter_location_' . md5( $lat . ',' . $lng );
-		$location  = get_transient( $cache_key );
+		// Round to 4 decimal places (~11m) for cache efficiency.
+		$cache_lat = round( (float) $lat, 4 );
+		$cache_lng = round( (float) $lng, 4 );
+		$cache_key = $cache_lat . ',' . $cache_lng;
+
+		// In-memory cache (persists within the same background process request).
+		if ( isset( self::$location_cache[ $cache_key ] ) ) {
+			$cached            = self::$location_cache[ $cache_key ];
+			$cached['_source'] = 'memory';
+			return $cached;
+		}
+
+		// Transient cache (persists across requests).
+		$transient_key = 'geodir_converter_loc_' . md5( $cache_key );
+		$location      = get_transient( $transient_key );
 
 		if ( false !== $location ) {
+			self::$location_cache[ $cache_key ] = $location;
+			$location['_source']                = 'cache';
 			return $location;
 		}
 
@@ -77,8 +104,11 @@ class GeoDir_Converter_Utils {
 
 		$location = self::parse_location_data( $lat, $lng, $data );
 
-		// Cache the location for 1 hour.
-		set_transient( $cache_key, $location, 60 * 60 );
+		// Store in both caches.
+		self::$location_cache[ $cache_key ] = $location;
+		set_transient( $transient_key, $location, HOUR_IN_SECONDS );
+
+		$location['_source'] = 'api';
 
 		return $location;
 	}
@@ -86,10 +116,12 @@ class GeoDir_Converter_Utils {
 	/**
 	 * Parse address data from latitude and longitude.
 	 *
-	 * @param float $lat Latitude.
-	 * @param float $lng Longitude.
-	 * @param array $location Location data.
-	 * @return array Location data with keys ['latitude', 'longitude', 'address', 'city', 'state', 'zip', 'country'], or WP_Error on failure.
+	 * @since 2.0.2
+	 *
+	 * @param float $lat      Latitude.
+	 * @param float $lng      Longitude.
+	 * @param array $location Location data from the geocoding API response.
+	 * @return array Location data with keys 'latitude', 'longitude', 'address', 'city', 'state', 'zip', 'country'.
 	 */
 	private static function parse_location_data( $lat, $lng, $location ) {
 		$fallback_countries = array( 'gb', 'bm', 'no', 'se', 'ro' );
@@ -153,12 +185,15 @@ class GeoDir_Converter_Utils {
 	/**
 	 * Parse CSV file.
 	 *
-	 * @param string $file_path The path to the CSV file.
+	 * @since 2.0.2
+	 *
+	 * @param string $file_path        The path to the CSV file.
 	 * @param array  $required_headers The required headers.
-	 * @param string $delimiter CSV delimiter. Default ','.
+	 * @param string $delimiter        CSV delimiter. Default ','.
 	 * @return array|WP_Error An array of parsed rows or a WP_Error object on failure.
 	 *
-	 * @throws WP_Error|Exception If the CSV file is not found, not readable, has invalid headers, or contains no valid data rows or an error occurs while parsing the CSV file.
+	 * @throws WP_Error|Exception If the CSV file is not found, not readable, has invalid headers,
+	 *                            or contains no valid data rows or an error occurs while parsing.
 	 */
 	public static function parse_csv( $file_path, $required_headers = array(), $delimiter = ',' ) {
 		if ( ! file_exists( $file_path ) ) {
@@ -214,6 +249,7 @@ class GeoDir_Converter_Utils {
 					if ( ! empty( $missing_headers ) ) {
 						return new WP_Error(
 							'missing_headers',
+							/* translators: %s: list of missing headers */
 							sprintf(
 								__( 'CSV is missing required headers: %s', 'geodir-converter' ),
 								implode( ', ', $missing_headers )
@@ -235,6 +271,7 @@ class GeoDir_Converter_Utils {
 					if ( count( $row ) !== count( $headers ) ) {
 						return new WP_Error(
 							'row_length_mismatch',
+							/* translators: %1$d: row number, %2$d: actual column count, %3$d: expected column count */
 							sprintf(
 								__( 'Row %1$d has %2$d columns while the header has %3$d columns. Please ensure all rows have the correct number of columns.', 'geodir-converter' ),
 								$line_number,
@@ -280,6 +317,7 @@ class GeoDir_Converter_Utils {
 			if ( $line_number > 0 && $e->getCode() === 422 ) {
 				return new WP_Error(
 					'parsing_error',
+					/* translators: %1$d: line number, %2$s: error message */
 					sprintf(
 						__( 'Error at line %1$d: %2$s', 'geodir-converter' ),
 						$line_number,

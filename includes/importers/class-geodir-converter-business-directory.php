@@ -78,21 +78,11 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'Business Directory', 'geodir-converter' );
@@ -101,7 +91,9 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings from your Business Directory installation.', 'geodir-converter' );
@@ -110,7 +102,9 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer icon URL.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/business-directory.png';
@@ -119,7 +113,9 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_CATEGORIES;
@@ -127,6 +123,10 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		?>
@@ -149,10 +149,7 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 			
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -160,8 +157,11 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $settings The settings to validate.
-	 * @return array|WP_Error Validated settings or WP_Error on failure.
+	 * @param array $files    Optional. The uploaded files to validate. Default empty array.
+	 * @return array|WP_Error Validated settings array or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		global $wpdb;
@@ -207,11 +207,12 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get next task.
+	 * Get next task in the import sequence.
 	 *
-	 * @param array $task The current task.
+	 * @since 2.0.2
 	 *
-	 * @return array|false The next task or false if all tasks are completed.
+	 * @param array $task The current task data.
+	 * @return array|false The next task array or false if all tasks are completed.
 	 */
 	public function next_task( $task ) {
 		$task['imported'] = 0;
@@ -238,6 +239,10 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		global $wpdb;
@@ -267,15 +272,17 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import categories.
+	 * Import categories from Business Directory to GeoDirectory.
 	 *
-	 * @param array $task Task details.
-	 * @return array Updated task details.
+	 * @since 2.0.2
+	 *
+	 * @param array $task Task details including the current action and counters.
+	 * @return array Updated task details with the next action.
 	 */
 	public function task_import_categories( array $task ) {
 		global $wpdb;
 
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 		$this->set_import_total();
 
 		$post_type = $this->get_import_post_type();
@@ -296,10 +303,11 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 		}
 
         if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $categories ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -316,7 +324,7 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 			/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-				esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -327,15 +335,17 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import tags.
+	 * Import tags from Business Directory to GeoDirectory.
 	 *
-	 * @param array $task Task details.
-	 * @return array Updated task details.
+	 * @since 2.0.2
+	 *
+	 * @param array $task Task details including the current action and counters.
+	 * @return array Updated task details with the next action.
 	 */
 	public function task_import_tags( array $task ) {
 		global $wpdb;
 
-		$this->log( esc_html__( 'Tags: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Tags: Import started.', 'geodir-converter' ) );
 
 		$post_type = $this->get_import_post_type();
 
@@ -350,15 +360,16 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $tags ) || is_wp_error( $tags ) ) {
-			$this->log( esc_html__( 'Tags: No items to import.', 'geodir-converter' ), 'notice' );
+			$this->log( __( 'Tags: No items to import.', 'geodir-converter' ), 'notice' );
 			return $this->next_task( $task );
 		}
 
         if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $tags ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $tags ),
 					0
 				),
@@ -375,7 +386,7 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 			/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-				esc_html__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -386,9 +397,11 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import packages.
+	 * Import packages from Business Directory to GeoDirectory pricing plans.
 	 *
-	 * @param array $task Import task details.
+	 * @since 2.0.2
+	 *
+	 * @param array $task Import task details including the current action and counters.
 	 * @return array Updated task with the next action.
 	 */
 	public function task_import_packages( array $task ) {
@@ -396,7 +409,7 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 		$plans     = $this->get_plans();
 
 		if ( empty( $plans ) ) {
-			$this->log( esc_html__( 'Packages: No items to import.', 'geodir-converter' ), 'notice' );
+			$this->log( __( 'Packages: No items to import.', 'geodir-converter' ), 'notice' );
 			return $this->next_task( $task );
 		}
 
@@ -442,11 +455,14 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 			$package_id   = GeoDir_Pricing_Package::insert_package( $package_data );
 
 			if ( ! $package_id || is_wp_error( $package_id ) ) {
+				/* translators: %s: plan name */
 				$this->log( sprintf( __( 'Failed to import plan: %s', 'geodir-converter' ), $plan_label ), 'error' );
 				++$failed;
 			} else {
 				$log_message = $existing_package
+				/* translators: %s: plan name */
 				? sprintf( __( 'Updated plan: %s', 'geodir-converter' ), $plan_label )
+				/* translators: %s: plan name */
 				: sprintf( __( 'Imported new plan: %s', 'geodir-converter' ), $plan_label );
 
 				$this->log( $log_message );
@@ -463,6 +479,7 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: failed count */
 				__( 'Plans import completed: %1$d imported, %2$d updated, %3$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -475,20 +492,22 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import custom fields.
+	 * Import custom fields from Business Directory to GeoDirectory.
 	 *
-	 * @param array $task Import task details.
+	 * @since 2.0.2
+	 *
+	 * @param array $task Import task details including the current action and counters.
 	 * @return array Updated task with the next action.
 	 */
 	public function task_import_fields( array $task ) {
 		global $plugin_prefix;
 
-		$this->log( esc_html__( 'Importing listing fields...', 'geodir-converter' ) );
+		$this->log( __( 'Importing listing fields...', 'geodir-converter' ) );
 
 		$fields = $this->get_form_fields();
 
 		if ( empty( $fields ) ) {
-			$this->log( esc_html__( 'No fields found for import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'No fields found for import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -508,6 +527,7 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 			// Skip fields that shouldn't be imported.
 			if ( $this->should_skip_field( $gd_field['htmlvar_name'] ) ) {
 				++$skipped;
+				/* translators: %s: field name */
 				$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
 				continue;
 			}
@@ -523,6 +543,7 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 				$column_exists ? ++$updated : ++$imported;
 			} else {
 				++$failed;
+				/* translators: %s: field name */
 				$this->log( sprintf( __( 'Failed to import custom field: %s', 'geodir-converter' ), $field['label'] ), 'error' );
 			}
 		}
@@ -533,6 +554,7 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: skipped count, %4$d: failed count */
 				__( 'Custom fields import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -546,10 +568,12 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import listings.
+	 * Import listings from Business Directory to GeoDirectory in batches.
 	 *
-	 * @param array $task The import task data.
-	 * @return array|false Result of the import operation or false if complete.
+	 * @since 2.0.2
+	 *
+	 * @param array $task The import task data including offset and batch size.
+	 * @return array|false Updated task for the next batch or false if complete.
 	 */
 	public function task_import_listings( array $task ) {
 		global $wpdb;
@@ -557,9 +581,6 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 		$this->log( __( 'Starting listings import...', 'geodir-converter' ) );
 
 		$offset         = isset( $task['offset'] ) ? absint( $task['offset'] ) : 0;
-		$imported       = isset( $task['imported'] ) ? absint( $task['imported'] ) : 0;
-		$failed         = isset( $task['failed'] ) ? absint( $task['failed'] ) : 0;
-		$skipped        = isset( $task['skipped'] ) ? absint( $task['skipped'] ) : 0;
 		$batch_size     = $this->get_batch_size();
 		$total_listings = $this->count_listings();
 
@@ -593,67 +614,34 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 		foreach ( $listings as $listing ) {
 			$post = get_post( $listing->ID );
 			if ( ! $post ) {
-				$this->log( sprintf( __( 'Failed to import listing: %s', 'geodir-converter' ), $listing->post_title ), 'error' );
-				++$failed;
+				$this->process_import_result( self::IMPORT_STATUS_FAILED, 'listing', $listing->post_title, $listing->ID );
 				continue;
 			}
 
 			$result = $this->import_single_listing( $post );
 
-			if ( GeoDir_Converter_Importer::IMPORT_STATUS_SKIPPED === $result ) {
-				++$skipped;
-				$this->log( sprintf( __( 'Skipped listing: %s', 'geodir-converter' ), $post->post_title ), 'warning' );
-			} elseif ( GeoDir_Converter_Importer::IMPORT_STATUS_FAILED === $result ) {
-				++$failed;
-				$this->log( sprintf( __( 'Failed import: %s', 'geodir-converter' ), $post->post_title ), 'error' );
-			} elseif ( GeoDir_Converter_Importer::IMPORT_STATUS_SUCCESS === $result ) {
-				++$imported;
-				$this->log( sprintf( __( 'Imported listing: %s', 'geodir-converter' ), $post->post_title ) );
-			}
+			$this->process_import_result( $result, 'listing', $post->post_title, $post->ID );
 		}
 
-		// Update task progress.
-		$task['imported'] = absint( $imported );
-		$task['failed']   = absint( $failed );
-		$task['skipped']  = absint( $skipped );
-
-		$this->increase_succeed_imports( (int) $imported );
-		$this->increase_skipped_imports( (int) $skipped );
-		$this->increase_failed_imports( (int) $failed );
+		$this->flush_failed_items();
 
 		$complete = ( $offset + $batch_size >= $total_listings );
 
 		if ( ! $complete ) {
-			$this->log(
-				sprintf(
-					__( 'Batch complete. Progress: %1$d/%2$d listings imported.', 'geodir-converter' ),
-					( $imported + $failed + $skipped ),
-					$total_listings
-				)
-			);
 			$task['offset'] = $offset + $batch_size;
 			return $task;
 		}
-
-		$message = sprintf(
-			__( 'Processed %1$d of %2$d listings. Imported: %3$d, skipped: %4$d, failed: %5$d', 'geodir-converter' ),
-			$offset,
-			$total_listings,
-			$imported,
-			$skipped,
-			$failed
-		);
-
-		$this->log( $message, 'success' );
 
 		return $this->next_task( $task );
 	}
 
 	/**
-	 * Convert a single Listify listing to GD format.
+	 * Convert a single Business Directory listing to GeoDirectory format.
 	 *
-	 * @param WP_Post $post The Listify listing post.
-	 * @return int|false The new post ID or false on failure.
+	 * @since 2.0.2
+	 *
+	 * @param \WP_Post $post The Business Directory listing post object.
+	 * @return int Import status constant (IMPORT_STATUS_SUCCESS, IMPORT_STATUS_FAILED, or IMPORT_STATUS_SKIPPED).
 	 */
 	private function import_single_listing( $post ) {
 		// Check if the post has already been imported.
@@ -862,8 +850,10 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	/**
 	 * Process form fields and extract values from post meta.
 	 *
-	 * @param array $post_meta The post meta data.
-	 * @return array The processed fields.
+	 * @since 2.0.2
+	 *
+	 * @param array $post_meta The post meta data keyed by meta key.
+	 * @return array The processed fields as key-value pairs mapped to GeoDirectory field keys.
 	 */
 	private function process_form_fields( $post_meta ) {
 		$form_fields = $this->get_form_fields();
@@ -969,10 +959,12 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Normalize and set default values for a given field.
+	 * Normalize and set default values for a given BDP field.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $field Field values to normalize.
-	 * @return array Normalized field values.
+	 * @return array Normalized field values merged with defaults.
 	 */
 	private function normalize_bdp_field( $field ) {
 		$defaults = array(
@@ -1017,9 +1009,11 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	/**
 	 * Get existing package based on BDP package ID or find a suitable free package.
 	 *
-	 * @param string  $post_type     The post type associated with the package.
-	 * @param int     $bdp_id        The Business Directory Plugin (BDP) package ID.
-	 * @param boolean $free_fallback Whether to fallback to a free package if no match is found.
+	 * @since 2.0.2
+	 *
+	 * @param string $post_type     The post type associated with the package.
+	 * @param int    $bdp_id        The Business Directory Plugin (BDP) package ID.
+	 * @param bool   $free_fallback Optional. Whether to fallback to a free package if no match is found. Default true.
 	 * @return object|null The existing package object if found, or null otherwise.
 	 */
 	private function get_existing_package( $post_type, $bdp_id, $free_fallback = true ) {
@@ -1140,8 +1134,10 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	/**
 	 * Get the subscription for a listing.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param int $post_id The post ID.
-	 * @return object|null The subscription or null if not found.
+	 * @return object|null The subscription row object or null if not found.
 	 */
 	private function get_subscription( $post_id ) {
 		global $wpdb;
@@ -1152,10 +1148,12 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieves the form fields.
+	 * Retrieves the form fields from Business Directory.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param bool $count Optional. Whether to return only the count of form fields. Default false.
-	 * @return array|int The form fields (with the predefined BDP ID field added at the beginning) or the count.
+	 * @return array|int The form fields array (with the predefined BDP ID field added) or the count.
 	 */
 	private function get_form_fields( $count = false ) {
 		global $wpdb;
@@ -1189,10 +1187,12 @@ class GeoDir_Converter_Business_Directory extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieves the package plans.
+	 * Retrieves the package plans from Business Directory.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param bool $count Optional. Whether to return only the count of plans. Default false.
-	 * @return array|int The package plans or the count.
+	 * @return array|int The package plans array or the count when $count is true.
 	 */
 	private function get_plans( $count = false ) {
 		global $wpdb;

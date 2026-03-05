@@ -93,21 +93,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	protected function init() {}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'Connections', 'geodir-converter' );
@@ -116,7 +106,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import entries from your Connections installation.', 'geodir-converter' );
@@ -125,7 +117,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer icon URL.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/connections.webp';
@@ -134,7 +128,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_CATEGORIES;
@@ -142,6 +138,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		?>
@@ -168,10 +168,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -179,10 +176,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
-	 * @param array $settings The settings to validate.
-	 * @param array $files    The files to validate.
+	 * @since 2.2.0
 	 *
-	 * @return array Validated and sanitized settings.
+	 * @param array $settings The settings to validate.
+	 * @param array $files    Optional. The uploaded files to validate. Default empty array.
+	 * @return array|WP_Error Validated and sanitized settings array or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -223,11 +221,13 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Sanitize selected filter values.
+	 * Sanitize selected filter values against an allowed list.
 	 *
-	 * @param array $values  Submitted values.
-	 * @param array $allowed Allowed options.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param array $values  Submitted values to sanitize.
+	 * @param array $allowed Allowed options to filter against.
+	 * @return array Sanitized and filtered values.
 	 */
 	private function sanitize_filter_values( array $values, array $allowed ) {
 		$values = array_map( 'sanitize_text_field', $values );
@@ -237,9 +237,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get selected entry types.
+	 * Get selected entry types from import settings.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Sanitized array of selected entry type slugs.
 	 */
 	private function get_selected_entry_types() {
 		$selected = $this->get_import_setting( 'connections_entry_types', array() );
@@ -249,9 +251,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get selected statuses.
+	 * Get selected statuses from import settings.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Sanitized array of selected status slugs.
 	 */
 	private function get_selected_statuses() {
 		$selected = $this->get_import_setting( 'connections_statuses', array() );
@@ -261,9 +265,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get selected visibility settings.
+	 * Get selected visibility settings from import settings.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Sanitized array of selected visibility options.
 	 */
 	private function get_selected_visibility() {
 		$selected = $this->get_import_setting( 'connections_visibility', array() );
@@ -274,6 +280,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 
 	/**
 	 * Display entry type selector.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	private function display_entry_type_select() {
 		$options = array();
@@ -302,6 +312,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 
 	/**
 	 * Display visibility selector.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	private function display_visibility_select() {
 		$options = array();
@@ -330,6 +344,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 
 	/**
 	 * Display status selector.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	private function display_status_select() {
 		$options = array(
@@ -358,19 +376,22 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Determine if Connections data tables are available.
 	 *
-	 * @return bool
+	 * @since 2.2.0
+	 *
+	 * @return bool True if the required Connections constants are defined, false otherwise.
 	 */
 	private function is_connections_available() {
 		return defined( 'CN_ENTRY_TABLE' ) && defined( 'CN_TERMS_TABLE' ) && defined( 'CN_TERM_TAXONOMY_TABLE' );
 	}
 
 	/**
-	 * Get next task.
+	 * Get next task in the import sequence.
 	 *
-	 * @param array $task The current task.
-	 * @param bool  $reset_offset Whether to reset the offset.
+	 * @since 2.2.0
 	 *
-	 * @return array|false The next task or false if all tasks are completed.
+	 * @param array $task         The current task data.
+	 * @param bool  $reset_offset Optional. Whether to reset the offset counter. Default false.
+	 * @return array|false The next task array or false if all tasks are completed.
 	 */
 	public function next_task( $task, $reset_offset = false ) {
 		$task['imported'] = 0;
@@ -399,6 +420,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		if ( ! $this->is_connections_available() ) {
@@ -416,7 +441,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Count available Connections categories.
 	 *
-	 * @return int
+	 * @since 2.2.0
+	 *
+	 * @return int The number of Connections categories.
 	 */
 	private function count_connection_categories() {
 		if ( ! $this->is_connections_available() ) {
@@ -436,9 +463,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve Connections categories.
+	 * Retrieve Connections categories from the database.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of category row objects or empty array if unavailable.
 	 */
 	private function get_connections_categories() {
 		if ( ! $this->is_connections_available() ) {
@@ -461,6 +490,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 
 	/**
 	 * Reset persisted term map.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	private function reset_term_map() {
 		$this->term_map = array();
@@ -468,9 +501,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get persisted term map.
+	 * Get persisted term map of Connections to GeoDirectory term IDs.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Associative array mapping Connections term IDs to GeoDirectory term IDs.
 	 */
 	private function get_term_map() {
 		if ( null === $this->term_map ) {
@@ -483,8 +518,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Retrieve mapped GeoDirectory term ID for a Connections term ID.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int $source_id Connections term ID.
-	 * @return int
+	 * @return int The mapped GeoDirectory term ID or 0 if not found.
 	 */
 	private function get_mapped_term_id( $source_id ) {
 		$map = $this->get_term_map();
@@ -493,10 +530,13 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Persist Connections -> GeoDirectory term mapping.
+	 * Persist Connections to GeoDirectory term mapping.
+	 *
+	 * @since 2.2.0
 	 *
 	 * @param int $source_id Connections term ID.
 	 * @param int $target_id GeoDirectory term ID.
+	 * @return void
 	 */
 	private function set_term_map_value( $source_id, $target_id ) {
 		$map               = $this->get_term_map();
@@ -510,24 +550,24 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	 * Import categories from Connections to GeoDirectory.
 	 *
 	 * @since 2.2.0
-	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task data including the current action and counters.
+	 * @return array Updated task data with the next action.
 	 */
 	public function task_import_categories( $task ) {
 		if ( ! $this->is_connections_available() ) {
-			$this->log( esc_html__( 'Connections tables not found. Skipping category import.', 'geodir-converter' ), 'error' );
+			$this->log( __( 'Connections tables not found. Skipping category import.', 'geodir-converter' ), 'error' );
 			return $this->next_task( $task );
 		}
 
 		$this->set_import_total();
 
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 
 		$categories = $this->get_connections_categories();
 
 		if ( empty( $categories ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -535,7 +575,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 					/* translators: %d: number of imported categories. */
-					esc_html__( 'Categories: Import completed. %1$d imported in test mode.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported in test mode.', 'geodir-converter' ),
 					count( $categories )
 				),
 				'success'
@@ -585,7 +625,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 					$this->log(
 						sprintf(
 							/* translators: 1: category name, 2: error message. */
-							esc_html__( 'Failed to import category "%1$s": %2$s', 'geodir-converter' ),
+							__( 'Failed to import category "%1$s": %2$s', 'geodir-converter' ),
 							esc_html( $category->name ),
 							esc_html( $term->get_error_message() )
 						),
@@ -607,7 +647,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: 1: number imported, 2: number failed. */
-				esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$imported,
 				$failed
 			),
@@ -620,7 +660,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Get custom fields for Connections entries.
 	 *
-	 * @return array The custom fields.
+	 * @since 2.2.0
+	 *
+	 * @return array Array of custom field definition arrays.
 	 */
 	private function get_custom_fields() {
 		$post_type   = $this->get_import_post_type();
@@ -645,7 +687,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Returns static Connections-specific field definitions.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of base Connections field definition arrays.
 	 */
 	private function get_base_connection_fields() {
 		return array(
@@ -754,7 +798,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Returns definitions for common GeoDirectory fields we populate if missing.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of predefined field definition arrays.
 	 */
 	private function get_predefined_field_definitions() {
 		return array(
@@ -869,7 +915,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Build dynamic field definitions for external data types.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of dynamically discovered field definition arrays.
 	 */
 	private function get_dynamic_field_definitions() {
 		$fields = array();
@@ -887,7 +935,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Dynamic phone field definitions for unmapped phone types.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of phone field definition arrays for unmapped types.
 	 */
 	private function build_dynamic_phone_fields() {
 		$fields = array();
@@ -904,6 +954,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$fields[] = array(
 				'type'        => 'phone',
 				'field_key'   => 'connections_phone_' . $slug,
+				/* translators: %s: social network name */
 				'label'       => sprintf( __( '%s Phone', 'geodir-converter' ), $label ),
 				'description' => __( 'Imported phone number from Connections.', 'geodir-converter' ),
 				'icon'        => 'fas fa-phone',
@@ -916,7 +967,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Dynamic email field definitions for unmapped email types.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of email field definition arrays for unmapped types.
 	 */
 	private function build_dynamic_email_fields() {
 		$fields = array();
@@ -933,6 +986,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$fields[] = array(
 				'type'        => 'email',
 				'field_key'   => 'connections_email_' . $slug,
+				/* translators: %s: social network name */
 				'label'       => sprintf( __( '%s Email', 'geodir-converter' ), $label ),
 				'description' => __( 'Imported email address from Connections.', 'geodir-converter' ),
 				'icon'        => 'fas fa-envelope',
@@ -945,7 +999,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Collects additional social network fields that do not have a predefined match.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of social field definition arrays for unmapped types.
 	 */
 	private function build_dynamic_social_fields() {
 		$fields = array();
@@ -962,6 +1018,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$fields[] = array(
 				'type'        => 'url',
 				'field_key'   => 'connections_social_' . $slug,
+				/* translators: %s: social network name */
 				'label'       => sprintf( __( '%s Profile', 'geodir-converter' ), $label ),
 				'description' => __( 'Imported from a Connections social profile.', 'geodir-converter' ),
 				'icon'        => 'fas fa-share-alt',
@@ -974,7 +1031,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Collects additional messenger fields without predefined matches.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of messenger field definition arrays for unmapped types.
 	 */
 	private function build_dynamic_messenger_fields() {
 		$fields = array();
@@ -991,6 +1050,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$fields[] = array(
 				'type'        => 'text',
 				'field_key'   => 'connections_messenger_' . $slug,
+				/* translators: %s: social network name */
 				'label'       => sprintf( __( '%s Handle', 'geodir-converter' ), $label ),
 				'description' => __( 'Imported from a Connections messenger account.', 'geodir-converter' ),
 				'icon'        => 'fas fa-comments',
@@ -1003,7 +1063,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Collects additional date fields for custom date types.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of date field definition arrays for custom types.
 	 */
 	private function build_dynamic_date_fields() {
 		$fields = array();
@@ -1022,6 +1084,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 				'type'        => 'datepicker',
 				'data_type'   => 'DATE',
 				'field_key'   => 'connections_date_' . $slug,
+				/* translators: %s: field label */
 				'label'       => sprintf( __( '%s Date', 'geodir-converter' ), $label ),
 				'description' => __( 'Date value imported from Connections.', 'geodir-converter' ),
 				'icon'        => 'fas fa-calendar',
@@ -1034,7 +1097,9 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Collects additional link fields for custom link types.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array of link field definition arrays for custom types.
 	 */
 	private function build_dynamic_link_fields() {
 		$fields = array();
@@ -1047,6 +1112,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$fields[] = array(
 				'type'        => 'url',
 				'field_key'   => 'connections_link_' . $slug,
+				/* translators: %s: field label */
 				'label'       => sprintf( __( '%s Link', 'geodir-converter' ), $label ),
 				'description' => __( 'Link imported from Connections.', 'geodir-converter' ),
 				'icon'        => 'fas fa-link',
@@ -1057,11 +1123,13 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Adds a field definition if it does not already exist.
+	 * Adds a field definition if it does not already exist in the collected fields.
 	 *
-	 * @param array  $fields     Collected fields.
+	 * @since 2.2.0
+	 *
+	 * @param array  $fields     Collected fields array, passed by reference.
 	 * @param string $post_type  GeoDirectory post type.
-	 * @param array  $definition Field definition.
+	 * @param array  $definition Field definition to add.
 	 * @return void
 	 */
 	private function maybe_add_field_definition( array &$fields, $post_type, array $definition ) {
@@ -1084,9 +1152,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Retrieves distinct type values from a Connections table.
 	 *
-	 * @param string $table  Table constant.
-	 * @param string $column Column name.
-	 * @return array [slug => label]
+	 * @since 2.2.0
+	 *
+	 * @param string $table  Table constant or table name.
+	 * @param string $column Column name to retrieve distinct values from.
+	 * @return array Associative array of slug => human-readable label pairs.
 	 */
 	private function get_distinct_type_slugs( $table, $column ) {
 		global $wpdb;
@@ -1123,8 +1193,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Formats a type label into a human readable string.
 	 *
-	 * @param string $value Raw value.
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @param string $value Raw type value to format.
+	 * @return string Formatted human-readable label.
 	 */
 	private function format_type_label( $value ) {
 		$value = trim( (string) $value );
@@ -1136,8 +1208,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Maps a Connections social type to a GeoDirectory field key.
 	 *
-	 * @param string $type Social type.
-	 * @return string Field key or empty string if no predefined match exists.
+	 * @since 2.2.0
+	 *
+	 * @param string $type Social type slug from Connections.
+	 * @return string GeoDirectory field key or empty string if no predefined match exists.
 	 */
 	private function map_social_type_to_field_key( $type ) {
 		$type = strtolower( trim( (string) $type ) );
@@ -1160,8 +1234,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Maps a Connections messenger type to a GeoDirectory field key.
 	 *
-	 * @param string $type Messenger type.
-	 * @return string Field key or empty string if no predefined match exists.
+	 * @since 2.2.0
+	 *
+	 * @param string $type Messenger type slug from Connections.
+	 * @return string GeoDirectory field key or empty string if no predefined match exists.
 	 */
 	private function map_messenger_type_to_field_key( $type ) {
 		$type = strtolower( trim( (string) $type ) );
@@ -1178,8 +1254,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Maps email types to predefined field keys.
 	 *
-	 * @param string $type Email type.
-	 * @return string Field key or empty string.
+	 * @since 2.2.0
+	 *
+	 * @param string $type Email type slug from Connections.
+	 * @return string GeoDirectory field key or empty string if no match.
 	 */
 	private function map_email_type_to_field_key( $type ) {
 		$type = strtolower( trim( (string) $type ) );
@@ -1197,8 +1275,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Maps phone types to predefined field keys.
 	 *
-	 * @param string $type Phone type.
-	 * @return string Field key or empty string.
+	 * @since 2.2.0
+	 *
+	 * @param string $type Phone type slug from Connections.
+	 * @return string GeoDirectory field key or empty string if no match.
 	 */
 	private function map_phone_type_to_field_key( $type ) {
 		$type = strtolower( trim( (string) $type ) );
@@ -1221,12 +1301,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	 * Import custom fields from Connections to GeoDirectory.
 	 *
 	 * @since 2.2.0
-	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task data including the current action and counters.
+	 * @return array Updated task data with the next action.
 	 */
 	public function task_import_fields( array $task ) {
-		$this->log( esc_html__( 'Importing custom fields...', 'geodir-converter' ) );
+		$this->log( __( 'Importing custom fields...', 'geodir-converter' ) );
 
 		$post_type   = $this->get_import_post_type();
 		$package_ids = $this->get_package_ids( $post_type );
@@ -1294,7 +1374,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: 1: imported count, 2: updated count, 3: skipped count, 4: failed count. */
-				esc_html__( 'Custom fields: Import completed. %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
+				__( 'Custom fields: Import completed. %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
 				$skipped,
@@ -1307,13 +1387,14 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Prepare a single field for import.
+	 * Prepare a single field for import into GeoDirectory.
 	 *
-	 * @param array  $field      Field data from Connections.
-	 * @param string $post_type  GeoDirectory post type.
-	 * @param array  $package_ids Package IDs for show_on_pkg.
+	 * @since 2.2.0
 	 *
-	 * @return array Prepared field data for GeoDirectory.
+	 * @param array  $field       Field data from Connections definition.
+	 * @param string $post_type   GeoDirectory post type.
+	 * @param array  $package_ids Optional. Package IDs for show_on_pkg. Default empty array.
+	 * @return array Prepared field data array for GeoDirectory, or empty array if invalid.
 	 */
 	private function prepare_single_field( array $field, $post_type, $package_ids = array() ) {
 		$field_type = isset( $field['type'] ) ? $field['type'] : 'text';
@@ -1405,9 +1486,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Map Connections field type to GeoDirectory field type.
 	 *
-	 * @param string $field_type Connections field type.
+	 * @since 2.2.0
 	 *
-	 * @return string GeoDirectory field type.
+	 * @param string $field_type Connections field type identifier.
+	 * @return string The corresponding GeoDirectory field type.
 	 */
 	private function map_field_type( $field_type ) {
 		$type_map = array(
@@ -1430,11 +1512,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Map GeoDirectory field type to data type.
+	 * Map GeoDirectory field type to database data type.
 	 *
-	 * @param string $field_type GeoDirectory field type.
+	 * @since 2.2.0
 	 *
-	 * @return string GeoDirectory data type.
+	 * @param string $field_type GeoDirectory field type identifier.
+	 * @return string The corresponding database data type (e.g. VARCHAR, TEXT, TINYINT).
 	 */
 	private function map_data_type( $field_type ) {
 		$type_map = array(
@@ -1456,9 +1539,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Count total listings to import.
+	 * Count total Connections entries to import based on active filters.
 	 *
-	 * @return int Total count.
+	 * @since 2.2.0
+	 *
+	 * @return int Total count of entries matching the filter criteria.
 	 */
 	private function count_listings() {
 		if ( ! $this->is_connections_available() ) {
@@ -1479,9 +1564,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Build SQL WHERE clause for entry filters.
+	 * Build SQL WHERE clause and parameters for entry filters.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Array with two elements: the WHERE clause string and an array of parameters.
 	 */
 	private function get_entry_filter_sql() {
 		$clauses = array( '1=1' );
@@ -1509,11 +1596,13 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Fetch a batch of Connections entries.
+	 * Fetch a batch of Connections entries from the database.
 	 *
-	 * @param int $limit  Batch size.
-	 * @param int $offset Query offset.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $limit  Batch size for the query.
+	 * @param int $offset Query offset for pagination.
+	 * @return array Array of entry row objects.
 	 */
 	private function get_entries_batch( $limit, $offset ) {
 		global $wpdb;
@@ -1529,10 +1618,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Determine a human-readable entry title.
+	 * Determine a human-readable entry title from Connections entry data.
 	 *
-	 * @param object $entry Connections entry row.
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @param object $entry Connections entry row object.
+	 * @return string The formatted entry title.
 	 */
 	private function get_entry_title( $entry ) {
 		if ( ! empty( $entry->organization ) ) {
@@ -1566,15 +1657,16 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Parse listings for import.
+	 * Parse listings for import in batches.
 	 *
-	 * @param array $task Import task.
+	 * @since 2.2.0
 	 *
-	 * @return array|false Next task or false if complete.
+	 * @param array $task Import task data including offset and batch size.
+	 * @return array|false Updated task for the next batch or false if complete.
 	 */
 	public function task_parse_listings( array $task ) {
 		if ( ! $this->is_connections_available() ) {
-			$this->log( esc_html__( 'Connections tables not found. Aborting listing import.', 'geodir-converter' ), 'error' );
+			$this->log( __( 'Connections tables not found. Aborting listing import.', 'geodir-converter' ), 'error' );
 			return $this->next_task( $task );
 		}
 
@@ -1591,24 +1683,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$status = $this->import_single_listing( $entry );
 			$title  = $this->get_entry_title( $entry );
 
-			switch ( $status ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					$message = self::IMPORT_STATUS_SUCCESS === $status ? self::LOG_TEMPLATE_SUCCESS : self::LOG_TEMPLATE_UPDATED;
-					$this->log( sprintf( $message, 'listing', $title ), self::IMPORT_STATUS_SUCCESS === $status ? 'success' : 'warning' );
-					$this->increase_succeed_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_FAILED:
-				default:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $title ), 'error' );
-					$this->increase_failed_imports( 1 );
-					break;
-			}
+			$this->process_import_result( $status, 'listing', $title, $entry->id, self::ACTION_PARSE_LISTINGS );
 		}
+
+		$this->flush_failed_items();
 
 		$task['offset'] = $offset + count( $entries );
 
@@ -1616,11 +1694,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import a single listing.
+	 * Import a single Connections entry as a GeoDirectory listing.
 	 *
-	 * @param object $entry Listing object from Connections.
+	 * @since 2.2.0
 	 *
-	 * @return int Import status.
+	 * @param object $entry Connections entry row object.
+	 * @return int Import status constant (IMPORT_STATUS_SUCCESS, IMPORT_STATUS_FAILED, or IMPORT_STATUS_UPDATED).
 	 */
 	private function import_single_listing( $entry ) {
 		if ( empty( $entry ) || ! isset( $entry->id ) ) {
@@ -1753,10 +1832,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Map Connections categories to GeoDirectory categories.
+	 * Map Connections categories to GeoDirectory categories for an entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Array of mapped GeoDirectory term IDs.
 	 */
 	private function get_entry_categories( $entry_id ) {
 		if ( ! $this->is_connections_available() ) {
@@ -1795,8 +1876,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Build a normalized location array for a Connections entry.
 	 *
-	 * @param object $entry Entry row.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param object $entry Connections entry row object.
+	 * @return array Associative array of location fields including street, city, region, country, zip, latitude, longitude.
 	 */
 	private function build_entry_location( $entry ) {
 		$defaults = array(
@@ -1829,7 +1912,7 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 					/* translators: 1: latitude value, 2: longitude value. */
-					esc_html__( 'Resolving address from coordinates %1$s,%2$s', 'geodir-converter' ),
+					__( 'Resolving address from coordinates %1$s,%2$s', 'geodir-converter' ),
 					$location['latitude'],
 					$location['longitude']
 				),
@@ -1847,10 +1930,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve the preferred address for an entry.
+	 * Retrieve the preferred address row for a Connections entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return object|null
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return object|null The address row object or null if not found.
 	 */
 	private function get_entry_address_row( $entry_id ) {
 		if ( ! defined( 'CN_ENTRY_ADDRESS_TABLE' ) ) {
@@ -1868,10 +1953,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Combine multiple address lines.
+	 * Combine multiple address lines into a single comma-separated string.
 	 *
-	 * @param array $lines Address lines.
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @param array $lines Array of address line strings.
+	 * @return string Combined address string with non-empty lines joined by commas.
 	 */
 	private function implode_address_lines( array $lines ) {
 		$lines = array_filter( array_map( 'trim', $lines ) );
@@ -1880,10 +1967,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve media assets (gallery + logo) for an entry.
+	 * Retrieve media assets (gallery + logo) for a Connections entry.
 	 *
-	 * @param object $entry Entry row.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param object $entry Connections entry row object.
+	 * @return array Associative array with 'gallery' (array of URLs) and 'logo' (string URL) keys.
 	 */
 	private function get_entry_media_assets( $entry ) {
 		$assets = array(
@@ -1959,10 +2048,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Normalize entry slug.
+	 * Normalize entry slug for use as a WordPress post name.
 	 *
-	 * @param object $entry Entry row.
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @param object $entry Connections entry row object.
+	 * @return string Sanitized slug string.
 	 */
 	private function normalize_entry_slug( $entry ) {
 		$slug = '';
@@ -1979,10 +2070,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Map Connections status to WordPress status.
+	 * Map Connections entry status to WordPress post status.
 	 *
-	 * @param string $status Connections status.
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @param string $status Connections entry status string.
+	 * @return string WordPress post status (publish, pending, or draft).
 	 */
 	private function map_entry_status( $status ) {
 		$status = strtolower( (string) $status );
@@ -1999,10 +2092,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Determine the WordPress author for an entry.
+	 * Determine the WordPress author ID for a Connections entry.
 	 *
-	 * @param object $entry Entry row.
-	 * @return int
+	 * @since 2.2.0
+	 *
+	 * @param object $entry Connections entry row object.
+	 * @return int WordPress user ID to use as the post author.
 	 */
 	private function map_entry_author( $entry ) {
 		$candidate_ids = array(
@@ -2022,10 +2117,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve phone rows for an entry.
+	 * Retrieve phone rows for a Connections entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Array of phone row objects.
 	 */
 	private function get_phone_rows( $entry_id ) {
 		if ( ! defined( 'CN_ENTRY_PHONE_TABLE' ) ) {
@@ -2043,10 +2140,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve email rows for an entry.
+	 * Retrieve email rows for a Connections entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Array of email row objects.
 	 */
 	private function get_email_rows( $entry_id ) {
 		if ( ! defined( 'CN_ENTRY_EMAIL_TABLE' ) ) {
@@ -2064,10 +2163,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve link rows for an entry.
+	 * Retrieve link rows for a Connections entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Array of link row objects.
 	 */
 	private function get_link_rows( $entry_id ) {
 		if ( ! defined( 'CN_ENTRY_LINK_TABLE' ) ) {
@@ -2085,10 +2186,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve social rows for an entry.
+	 * Retrieve social profile rows for a Connections entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Array of social profile row objects.
 	 */
 	private function get_social_rows( $entry_id ) {
 		if ( ! defined( 'CN_ENTRY_SOCIAL_TABLE' ) ) {
@@ -2106,10 +2209,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve messenger rows for an entry.
+	 * Retrieve messenger rows for a Connections entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Array of messenger row objects.
 	 */
 	private function get_messenger_rows( $entry_id ) {
 		if ( ! defined( 'CN_ENTRY_MESSENGER_TABLE' ) ) {
@@ -2127,10 +2232,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieve date rows for an entry.
+	 * Retrieve date rows for a Connections entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Array of date row objects.
 	 */
 	private function get_date_rows( $entry_id ) {
 		if ( ! defined( 'CN_ENTRY_DATE_TABLE' ) ) {
@@ -2148,10 +2255,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Prepare phone summary text + per-field values.
+	 * Prepare phone summary text and per-field values for an entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Associative array with 'summary' (string) and 'fields' (array of field key => value) keys.
 	 */
 	private function get_phone_field_data( $entry_id ) {
 		$rows = $this->get_phone_rows( $entry_id );
@@ -2243,10 +2352,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Prepare email summary text + per-field values.
+	 * Prepare email summary text and per-field values for an entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Associative array with 'summary' (string) and 'fields' (array of field key => value) keys.
 	 */
 	private function get_email_field_data( $entry_id ) {
 		$rows = $this->get_email_rows( $entry_id );
@@ -2338,10 +2449,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Prepare website summary + per-field values.
+	 * Prepare website summary and per-field values for an entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Associative array with 'summary' (string) and 'fields' (array of field key => value) keys.
 	 */
 	private function get_website_field_data( $entry_id ) {
 		$rows = $this->get_link_rows( $entry_id );
@@ -2373,11 +2486,13 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$details = array( $url );
 
 			if ( ! empty( $row->target ) ) {
+				/* translators: %s: target value */
 				$details[] = sprintf( __( 'Target: %s', 'geodir-converter' ), $row->target );
 			}
 
 			if ( isset( $row->follow ) ) {
 				$details[] = sprintf(
+					/* translators: %s: follow status */
 					__( 'Follow: %s', 'geodir-converter' ),
 					$row->follow ? __( 'Yes', 'geodir-converter' ) : __( 'No', 'geodir-converter' )
 				);
@@ -2399,10 +2514,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Prepare social profile summary + per-field values.
+	 * Prepare social profile summary and per-field values for an entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Associative array with 'summary' (string) and 'fields' (array of field key => value) keys.
 	 */
 	private function get_social_field_data( $entry_id ) {
 		$rows = $this->get_social_rows( $entry_id );
@@ -2447,10 +2564,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Prepare messenger summary + per-field values.
+	 * Prepare messenger summary and per-field values for an entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Associative array with 'summary' (string) and 'fields' (array of field key => value) keys.
 	 */
 	private function get_messenger_field_data( $entry_id ) {
 		$rows = $this->get_messenger_rows( $entry_id );
@@ -2495,10 +2614,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Prepare date summary + per-field values.
+	 * Prepare date summary and per-field values for an entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Associative array with 'summary' (string) and 'fields' (array of field key => value) keys.
 	 */
 	private function get_date_field_data( $entry_id ) {
 		$rows = $this->get_date_rows( $entry_id );
@@ -2565,10 +2686,12 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Prepare link summary + per-field values.
+	 * Prepare link summary and per-field values for an entry.
 	 *
-	 * @param int $entry_id Entry ID.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param int $entry_id Connections entry ID.
+	 * @return array Associative array with 'summary' (string) and 'fields' (array of field key => value) keys.
 	 */
 	private function get_link_field_data( $entry_id ) {
 		$rows = $this->get_link_rows( $entry_id );
@@ -2598,11 +2721,13 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 			$details = array( $url );
 
 			if ( ! empty( $row->target ) ) {
+				/* translators: %s: target value */
 				$details[] = sprintf( __( 'Target: %s', 'geodir-converter' ), $row->target );
 			}
 
 			if ( isset( $row->follow ) ) {
 				$details[] = sprintf(
+					/* translators: %s: follow status */
 					__( 'Follow: %s', 'geodir-converter' ),
 					$row->follow ? __( 'Yes', 'geodir-converter' ) : __( 'No', 'geodir-converter' )
 				);
@@ -2637,9 +2762,11 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Normalize multi-value field arrays into strings.
 	 *
-	 * @param array  $field_values Map of field key => array values.
-	 * @param string $glue         Implode glue.
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @param array  $field_values Map of field key => array of values.
+	 * @param string $glue         Optional. Implode glue string. Default newline.
+	 * @return array Normalized map with array values joined into strings.
 	 */
 	private function normalize_field_value_map( array $field_values, $glue = "\n" ) {
 		foreach ( $field_values as $key => $values ) {
@@ -2659,8 +2786,10 @@ class GeoDir_Converter_Connections extends GeoDir_Converter_Importer {
 	/**
 	 * Determine if a Connections link type represents a website.
 	 *
-	 * @param string $type Link type.
-	 * @return bool
+	 * @since 2.2.0
+	 *
+	 * @param string $type Connections link type slug.
+	 * @return bool True if the type represents a website link, false otherwise.
 	 */
 	private function is_website_link_type( $type ) {
 		$type = sanitize_key( $type );

@@ -15,6 +15,7 @@ use GeoDir_Admin_Taxonomies;
 use GeoDir_Converter\GeoDir_Converter_Utils;
 use GeoDir_Converter\GeoDir_Converter_Options_Handler;
 use GeoDir_Converter\Importers\GeoDir_Converter_Background_Process;
+use GeoDir_Converter\Traits\GeoDir_Converter_Trait_Singleton;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -24,6 +25,8 @@ defined( 'ABSPATH' ) || exit;
  * This class serves as a foundation for all specific importer classes.
  */
 abstract class GeoDir_Converter_Importer {
+	use GeoDir_Converter_Trait_Singleton;
+
 	/**
 	 * Number of records processed per batch.
 	 *
@@ -151,6 +154,35 @@ abstract class GeoDir_Converter_Importer {
 	protected $importer_id;
 
 	/**
+	 * Buffer of failed items to be written in a single batch.
+	 *
+	 * @since 2.2.0
+	 * @var array
+	 */
+	protected $pending_failed_items = array();
+
+	/**
+	 * Cached import settings for the current request.
+	 *
+	 * @var array|null
+	 */
+	private $cached_import_settings = null;
+
+	/**
+	 * Buffered stats increments to be flushed in a single write.
+	 *
+	 * @var array
+	 */
+	private $stats_buffer = array();
+
+	/**
+	 * Buffered log entries to be flushed in a single write.
+	 *
+	 * @var array
+	 */
+	private $logs_buffer = array();
+
+	/**
 	 * Background process instance.
 	 *
 	 * @var GeoDir_Converter_Background_Process
@@ -166,6 +198,10 @@ abstract class GeoDir_Converter_Importer {
 
 	/**
 	 * Constructor.
+	 *
+	 * Initializes the options handler, background process, and registers the importer.
+	 *
+	 * @since 2.0.2
 	 */
 	public function __construct() {
 		$this->options_handler    = new GeoDir_Converter_Options_Handler( "geodir_converter_{$this->importer_id}" );
@@ -178,11 +214,17 @@ abstract class GeoDir_Converter_Importer {
 
 	/**
 	 * Initialize the importer.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	abstract protected function init();
 
 	/**
 	 * Register the importer.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $importers Existing importers.
 	 * @return array Modified importers array.
@@ -196,7 +238,9 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Get the importer ID.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer identifier.
 	 */
 	public function get_id() {
 		return $this->importer_id;
@@ -205,21 +249,27 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer title.
 	 */
 	abstract public function get_title();
 
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer description.
 	 */
 	abstract public function get_description();
 
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The URL to the importer icon image.
 	 */
 	abstract public function get_icon();
 
@@ -236,10 +286,11 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
-	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings, or WP_Error on failure.
 	 */
 	abstract public function validate_settings( array $settings, array $files = array() );
 
@@ -247,6 +298,10 @@ abstract class GeoDir_Converter_Importer {
 	 * Render importer settings.
 	 *
 	 * This method should be overridden by child classes to display custom settings.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		echo '<p>' . esc_html__( 'This importer does not have any custom settings.', 'geodir-converter' ) . '</p>';
@@ -255,16 +310,21 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Render a notice for a missing plugin.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $plugin_name The name of the plugin.
 	 * @param string $import_type The type of data that won't be imported.
 	 * @param string $plugin_url  The URL to download the plugin.
+	 * @return void
 	 */
 	protected function render_plugin_notice( $plugin_name, $import_type, $plugin_url ) {
 		aui()->alert(
 			array(
 				'type'    => 'info',
+				/* translators: %1$s: plugin name */
 				'heading' => wp_sprintf( esc_html__( 'The %1$s plugin is not active.', 'geodir-converter' ), $plugin_name ),
 				'content' => wp_sprintf(
+					/* translators: %1$s: import type, %2$s: opening link tag, %3$s: plugin name, %4$s: closing link tag */
 					esc_html__(
 						'%1$s will not be imported unless you install and activate the %2$s%3$s%4$s plugin first.',
 						'geodir-converter'
@@ -283,7 +343,10 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Displays the logs associated with the process.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $logs An array containing log entries.
+	 * @return void
 	 */
 	public function display_logs( array $logs = array() ) {
 		echo '<ul class="geodir-converter-logs ps-0 pe-0">';
@@ -295,21 +358,47 @@ abstract class GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Displays the progress of the process.
+	 * Displays the progress bar and stats summary.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function display_progress() {
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<div class="geodir-converter-progress mt-3 mb-3 d-none">';
-		echo '<div class="progress">';
-		echo '<div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>';
-		echo '</div>';
-		echo '</div>';
+		?>
+		<div class="geodir-converter-progress mt-3 mb-3 d-none">
+			<div class="progress">
+				<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+			</div>
+			<div class="geodir-converter-progress-footer d-flex justify-content-between align-items-center mt-2">
+				<div class="geodir-converter-stats-summary d-flex gap-3">
+					<span class="geodir-converter-stat-succeed d-none">
+						<strong class="geodir-converter-stat-succeed-count">0</strong> <?php esc_html_e( 'imported', 'geodir-converter' ); ?>
+					</span>
+					<span class="geodir-converter-stat-skipped d-none">
+						<strong class="geodir-converter-stat-skipped-count">0</strong> <?php esc_html_e( 'skipped', 'geodir-converter' ); ?>
+					</span>
+					<span class="geodir-converter-stat-failed d-none">
+						<strong class="geodir-converter-stat-failed-count">0</strong> <?php esc_html_e( 'failed', 'geodir-converter' ); ?>
+					</span>
+					<span class="geodir-converter-stat-total d-none">
+						<strong class="geodir-converter-stat-total-count">0</strong> <?php esc_html_e( 'total', 'geodir-converter' ); ?>
+					</span>
+				</div>
+				<span class="geodir-converter-elapsed-time d-none">
+					<span class="geodir-converter-elapsed-value">00:00:00</span>
+				</span>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
 	 * Display the post type selection dropdown.
 	 *
 	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function display_post_type_select() {
 		$post_type_options = geodir_get_posttypes( 'options' );
@@ -351,6 +440,8 @@ abstract class GeoDir_Converter_Importer {
 	 * Display the author selection dropdown.
 	 *
 	 * @since 2.0.2
+	 *
+	 * @param bool $default_user Optional. Whether to show as default user selector. Default false.
 	 * @return void
 	 */
 	public function display_author_select( $default_user = false ) {
@@ -387,6 +478,8 @@ abstract class GeoDir_Converter_Importer {
 	 * Display the test mode toggle checkbox.
 	 *
 	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function display_test_mode_checkbox() {
 		$is_test_mode = (bool) $this->is_test_mode();
@@ -418,16 +511,21 @@ abstract class GeoDir_Converter_Importer {
 	public function display_error_alert( $message = '' ) {
 		$message = ! empty( $message ) ? esc_html( $message ) : '';
 		?>
-		<div class="alert alert-danger geodir-converter-error d-none">
+		<div class="alert alert-danger geodir-converter-error d-none d-flex align-items-start mt-3" role="alert">
+			<i class="fas fa-exclamation-circle me-2 mt-1" style="font-size: 16px;"></i>
+			<div>
 			<?php
-			echo $message; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped 
+			echo $message; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			?>
+			</div>
 		</div>
 		<?php
 	}
 
 	/**
 	 * Get the batch size for importing listings.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @return int The batch size.
 	 */
@@ -438,6 +536,8 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Check if the importer is in test mode.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @return bool True if in test mode, false otherwise.
 	 */
 	protected function is_test_mode() {
@@ -447,21 +547,29 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Get the import settings.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @return array The import settings.
 	 */
 	protected function get_import_settings() {
-		return (array) $this->options_handler->get_option_no_cache( 'import_settings', array() );
+		if ( null === $this->cached_import_settings ) {
+			$this->cached_import_settings = (array) $this->options_handler->get_option_no_cache( 'import_settings', array() );
+		}
+
+		return $this->cached_import_settings;
 	}
 
 	/**
 	 * Get a saved setting from import_settings option.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $key     The setting key to retrieve.
 	 * @param mixed  $default Optional. Default value to return if the setting does not exist.
 	 * @return mixed The setting value or default if not found.
 	 */
 	protected function get_import_setting( $key, $default = null ) {
-		$settings = (array) $this->options_handler->get_option_no_cache( 'import_settings', array() );
+		$settings = $this->get_import_settings();
 		if ( isset( $settings[ $key ] ) ) {
 			return $settings[ $key ];
 		}
@@ -470,10 +578,12 @@ abstract class GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get a saved setting from import_settings option.
+	 * Get the GeoDirectory post type for the import.
 	 *
-	 * @param mixed $default Optional. Default value to return if the setting does not exist.
-	 * @return mixed The setting value or default if not found.
+	 * @since 2.0.2
+	 *
+	 * @param string $default Optional. Default post type. Default 'gd_place'.
+	 * @return string The GeoDirectory post type.
 	 */
 	protected function get_import_post_type( $default = 'gd_place' ) {
 		$post_type = $this->get_import_setting( 'gd_post_type', $default );
@@ -483,6 +593,8 @@ abstract class GeoDir_Converter_Importer {
 
 	/**
 	 * Check if a field should be skipped during import.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $field_name The field name to check.
 	 * @return bool True if the field should be skipped, false otherwise.
@@ -543,7 +655,18 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Get the default location data.
 	 *
-	 * @return array The default location data.
+	 * @since 2.0.2
+	 *
+	 * @return array {
+	 *     The default location data.
+	 *
+	 *     @type string $city      City name.
+	 *     @type string $region    Region name.
+	 *     @type string $country   Country name.
+	 *     @type string $zip       Zip code.
+	 *     @type string $latitude  Latitude coordinate.
+	 *     @type string $longitude Longitude coordinate.
+	 * }
 	 */
 	protected function get_default_location() {
 		global $geodirectory;
@@ -554,6 +677,7 @@ abstract class GeoDir_Converter_Importer {
 			'city'      => isset( $default_location->city ) ? $default_location->city : '',
 			'region'    => isset( $default_location->region ) ? $default_location->region : '',
 			'country'   => isset( $default_location->country ) ? $default_location->country : '',
+			'zip'       => '',
 			'latitude'  => isset( $default_location->latitude ) ? $default_location->latitude : '',
 			'longitude' => isset( $default_location->longitude ) ? $default_location->longitude : '',
 		);
@@ -561,6 +685,8 @@ abstract class GeoDir_Converter_Importer {
 
 	/**
 	 * Sorts an array by priority value.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $a First array to compare.
 	 * @param array $b Second array to compare.
@@ -580,8 +706,10 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Get package IDs for a given post type.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $post_type The post type.
-	 * @return array|string Array of package IDs or empty string if no packages.
+	 * @return array Array of package IDs.
 	 */
 	protected function get_package_ids( $post_type ) {
 		$package_ids = array();
@@ -598,10 +726,12 @@ abstract class GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get post meta.
+	 * Get all post meta for a given post as a key-value array.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param int $post_id The post ID.
-	 * @return array The post meta.
+	 * @return array Associative array of meta keys to unserialized meta values.
 	 */
 	public function get_post_meta( $post_id ) {
 		global $wpdb;
@@ -616,12 +746,158 @@ abstract class GeoDir_Converter_Importer {
 
 		$post_meta = array();
 		foreach ( $post_meta_raw as $meta ) {
-			$post_meta[ $meta['meta_key'] ] = $meta['meta_value'];
+			$post_meta[ $meta['meta_key'] ] = maybe_unserialize( $meta['meta_value'] );
 		}
 
 		unset( $post_meta_raw ); // Free memory.
 
 		return $post_meta;
+	}
+
+	/**
+	 * Suspend non-essential hooks during bulk import for performance.
+	 *
+	 * Defers term/comment counting and removes hooks that send emails,
+	 * clear caches, or run pricing validations during each post save.
+	 * Call restore_hooks() after the batch to re-enable everything.
+	 *
+	 * @since 2.2.0
+	 */
+	public function suspend_hooks() {
+		wp_defer_term_counting( true );
+		wp_defer_comment_counting( true );
+
+		// Prevent email notifications on post status transitions.
+		remove_action( 'transition_post_status', array( 'GeoDir_Post_Data', 'transition_post_status' ), 6 );
+
+		// Prevent Elementor cache clear on every save.
+		if ( class_exists( 'GeoDir_Elementor' ) ) {
+			remove_action( 'save_post', array( 'GeoDir_Elementor', 'clear_cache' ) );
+		}
+
+		// Prevent pricing hooks from running during import.
+		if ( class_exists( 'GeoDir_Pricing_Bundle' ) ) {
+			remove_action( 'save_post', array( 'GeoDir_Pricing_Bundle', 'on_save_post' ), 99 );
+		}
+
+		if ( class_exists( 'GeoDir_Pricing_Post' ) ) {
+			remove_filter( 'wp_insert_post_data', array( 'GeoDir_Pricing_Post', 'wp_insert_post_data' ), 9 );
+		}
+	}
+
+	/**
+	 * Restore hooks and flush deferred counts after bulk import.
+	 *
+	 * @since 2.2.0
+	 */
+	public function restore_hooks() {
+		wp_defer_term_counting( false );
+		wp_defer_comment_counting( false );
+
+		// Restore hooks.
+		add_action( 'transition_post_status', array( 'GeoDir_Post_Data', 'transition_post_status' ), 6, 3 );
+
+		if ( class_exists( 'GeoDir_Elementor' ) ) {
+			add_action( 'save_post', array( 'GeoDir_Elementor', 'clear_cache' ) );
+		}
+
+		if ( class_exists( 'GeoDir_Pricing_Bundle' ) ) {
+			add_action( 'save_post', array( 'GeoDir_Pricing_Bundle', 'on_save_post' ), 99, 3 );
+		}
+
+		if ( class_exists( 'GeoDir_Pricing_Post' ) ) {
+			add_filter( 'wp_insert_post_data', array( 'GeoDir_Pricing_Post', 'wp_insert_post_data' ), 9, 2 );
+		}
+	}
+
+	/**
+	 * Reverse geocode coordinates and merge into a location array.
+	 *
+	 * Calls the geocoding API (with caching), logs the result, and merges
+	 * the normalised location data into the provided array.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param float $lat      Latitude.
+	 * @param float $lng      Longitude.
+	 * @param array $location Existing location array to merge into.
+	 * @param int   $post_id  Source post ID (used in log messages).
+	 * @return array The merged location array.
+	 */
+	protected function geocode_location( $lat, $lng, array $location, $post_id ) {
+		if ( empty( $lat ) || empty( $lng ) ) {
+			return $location;
+		}
+
+		$result = GeoDir_Converter_Utils::get_location_from_coords( $lat, $lng );
+
+		if ( ! is_wp_error( $result ) ) {
+			$source = isset( $result['_source'] ) ? $result['_source'] : 'unknown';
+			$this->log(
+				sprintf(
+					/* translators: 1: post ID, 2: city, 3: country, 4: source (api/cache/memory) */
+					__( 'Geocoded (#%1$d): %2$s, %3$s (%4$s)', 'geodir-converter' ),
+					$post_id,
+					! empty( $result['city'] ) ? $result['city'] : '?',
+					! empty( $result['country'] ) ? $result['country'] : '?',
+					$source
+				)
+			);
+			unset( $result['_source'] );
+			$location = array_merge( $location, $result );
+		} else {
+			$this->log(
+				sprintf(
+					/* translators: 1: post ID, 2: error message */
+					__( 'Geocoding failed (#%1$d): %2$s', 'geodir-converter' ),
+					$post_id,
+					$result->get_error_message()
+				),
+				'warning'
+			);
+		}
+
+		return $location;
+	}
+
+	/**
+	 * Process the result of a single listing import.
+	 *
+	 * Handles logging and counter updates for all import status codes.
+	 * Eliminates the duplicated switch/log/count block across importers.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param int    $status    Import status constant (IMPORT_STATUS_*).
+	 * @param string $item_type Human-readable item type (e.g. 'listing', 'property').
+	 * @param string $label     Display label for the item (e.g. 'My Listing (#123)').
+	 * @param int    $source_id Source post ID for failed item tracking.
+	 * @param string $action    Action identifier for failed item tracking.
+	 */
+	public function process_import_result( $status, $item_type, $label, $source_id = 0, $action = self::ACTION_IMPORT_LISTINGS ) {
+		switch ( $status ) {
+			case self::IMPORT_STATUS_SUCCESS:
+			case self::IMPORT_STATUS_UPDATED:
+				if ( self::IMPORT_STATUS_SUCCESS === $status ) {
+					$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, $item_type, $label ), 'success' );
+				} else {
+					$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, $item_type, $label ), 'warning' );
+				}
+				$this->increase_succeed_imports( 1 );
+				break;
+
+			case self::IMPORT_STATUS_SKIPPED:
+				$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, $item_type, $label ), 'warning' );
+				$this->increase_skipped_imports( 1 );
+				break;
+
+			case self::IMPORT_STATUS_FAILED:
+			default:
+				$this->log( sprintf( self::LOG_TEMPLATE_FAILED, $item_type, $label ), 'warning' );
+				$this->increase_failed_imports( 1 );
+				$this->record_failed_item( $source_id, $action, $item_type, $label, sprintf( self::LOG_TEMPLATE_FAILED, $item_type, $label ) );
+				break;
+		}
 	}
 
 	/**
@@ -682,11 +958,15 @@ abstract class GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import image attachment.
+	 * Import image attachment from a URL.
+	 *
+	 * Downloads the image, sideloads it into the media library, and returns
+	 * attachment data including the ID, URL, and file path.
 	 *
 	 * @since 2.0.2
-	 * @param string $url The URL to import.
-	 * @return string Gallery images string.
+	 *
+	 * @param string $url The URL of the image to import.
+	 * @return array|false Attachment data array with 'id', 'url', and 'src' keys, or false on failure.
 	 */
 	protected function import_attachment( $url ) {
 		$uploads   = wp_upload_dir();
@@ -754,12 +1034,20 @@ abstract class GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import taxonomy terms.
+	 * Import taxonomy terms into GeoDirectory.
 	 *
-	 * @param array  $terms     Array of terms to import.
-	 * @param string $taxonomy  The taxonomy to import terms into.
-	 * @param string $desc_meta_key  The meta key for storing term description.
-	 * @return array Result of the import operation.
+	 * @since 2.0.2
+	 *
+	 * @param array  $terms        Array of term objects to import.
+	 * @param string $taxonomy     The taxonomy to import terms into.
+	 * @param string $desc_meta_key The meta key for storing term description. Default 'ct_cat_top_desc'.
+	 * @param array  $params       Optional. Additional parameters including 'importer_id' and 'eq_suffix'.
+	 * @return array {
+	 *     Result of the import operation.
+	 *
+	 *     @type int $imported Number of successfully imported terms.
+	 *     @type int $failed   Number of failed term imports.
+	 * }
 	 */
 	protected function import_taxonomy_terms( $terms, $taxonomy, $desc_meta_key = 'ct_cat_top_desc', $params = array() ) {
 		$imported = 0;
@@ -867,8 +1155,14 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Start the import process.
 	 *
+	 * Validates settings, clears previous import data, and dispatches
+	 * the background process to handle the import.
+	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $settings The import settings.
-	 * @return array The result of the import process.
+	 * @param array $files    Optional. Uploaded files to process. Default empty array.
+	 * @return WP_Error|void WP_Error on validation failure, void on success.
 	 */
 	public function import( $settings, $files = array() ) {
 		// Parse CSV files.
@@ -932,7 +1226,10 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Increases the total count of imports by the specified increment.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param int $increment The amount by which to increase the total imports count.
+	 * @return void
 	 */
 	public function increase_imports_total( $increment ) {
 		$this->increase_field( 'total', $increment );
@@ -941,7 +1238,10 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Increases the count of successful imports by the specified increment.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param int $increment The amount by which to increase the successful imports count.
+	 * @return void
 	 */
 	public function increase_succeed_imports( $increment ) {
 		$this->increase_field( 'succeed', $increment );
@@ -950,7 +1250,10 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Increases the count of skipped imports by the specified increment.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param int $increment The amount by which to increase the skipped imports count.
+	 * @return void
 	 */
 	public function increase_skipped_imports( $increment ) {
 		$this->increase_field( 'skipped', $increment );
@@ -959,32 +1262,70 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Increases the count of failed imports by the specified increment.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param int $increment The amount by which to increase the failed imports count.
+	 * @return void
 	 */
 	public function increase_failed_imports( $increment ) {
 		$this->increase_field( 'failed', $increment );
 	}
 
 	/**
-	 * Increases the value of a specific field by the specified increment in the database.
+	 * Increases the value of a specific stats field by the specified increment.
 	 *
-	 * @param string $field The name of the field to increase.
+	 * Buffers the increment in memory. Call flush_stats() to write to the database.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @param string $field     The name of the stats field to increase.
 	 * @param int    $increment The amount by which to increase the field's value.
+	 * @return void
 	 */
 	protected function increase_field( $field, $increment ) {
+		if ( ! isset( $this->stats_buffer[ $field ] ) ) {
+			$this->stats_buffer[ $field ] = 0;
+		}
+		$this->stats_buffer[ $field ] += (int) $increment;
+	}
+
+	/**
+	 * Flush buffered stats increments to the database in a single write.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function flush_stats() {
+		if ( empty( $this->stats_buffer ) ) {
+			return;
+		}
+
 		$stats       = (array) $this->options_handler->get_option_no_cache( 'stats' );
 		$empty_stats = self::empty_stats();
 		$stats       = wp_parse_args( $stats, $empty_stats );
 
-		$stats[ $field ] = (int) $stats[ $field ] + (int) $increment;
+		foreach ( $this->stats_buffer as $field => $increment ) {
+			$stats[ $field ] = (int) $stats[ $field ] + $increment;
+		}
 
 		$this->options_handler->update_option( 'stats', (array) $stats );
+		$this->stats_buffer = array();
 	}
 
 	/**
-	 * Retrieves the statistics for the current queue ID.
+	 * Retrieves the import statistics.
 	 *
-	 * @return array An array containing statistics (total, succeed, skipped, failed, removed).
+	 * @since 2.0.2
+	 *
+	 * @return array {
+	 *     An array containing import statistics.
+	 *
+	 *     @type int $total   Total items to import.
+	 *     @type int $succeed Successfully imported items.
+	 *     @type int $skipped Skipped items.
+	 *     @type int $failed  Failed items.
+	 * }
 	 */
 	public function get_stats() {
 		$stats       = (array) $this->options_handler->get_option_no_cache( 'stats' );
@@ -1002,6 +1343,8 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Returns an array representing empty statistics, with all counts initialized to 0.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @return array An array containing empty statistics.
 	 */
 	public function empty_stats() {
@@ -1016,7 +1359,9 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Get the import progress as a percentage.
 	 *
-	 * @return float
+	 * @since 2.0.2
+	 *
+	 * @return float The import progress percentage (0-100).
 	 */
 	public function get_progress() {
 		$stats = $this->get_stats();
@@ -1034,6 +1379,8 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Clear all import-related options.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @return void
 	 */
 	public function clear_import_options() {
@@ -1041,6 +1388,125 @@ abstract class GeoDir_Converter_Importer {
 		$this->options_handler->delete_option( 'import_log' );
 		$this->options_handler->delete_option( 'import_settings' );
 		$this->options_handler->delete_option( 'import_start_time' );
+		$this->options_handler->delete_option( 'failed_items' );
+		$this->options_handler->delete_option( 'paused' );
+	}
+
+	/**
+	 * Record a failed import item for potential retry.
+	 *
+	 * Items are buffered in memory and written to the database
+	 * when flush_failed_items() is called.
+	 *
+	 * @since 2.2.0
+	 * @param int    $source_id  The original source item ID.
+	 * @param string $action     The task action (e.g., ACTION_IMPORT_LISTINGS).
+	 * @param string $item_type  Human-readable item type (e.g., 'listing', 'category').
+	 * @param string $item_title The item title for display purposes.
+	 * @param string $error      The error description.
+	 */
+	public function record_failed_item( $source_id, $action, $item_type, $item_title, $error = '' ) {
+		$key = $action . '_' . $source_id;
+
+		$this->pending_failed_items[ $key ] = array(
+			'source_id'     => $source_id,
+			'action'        => $action,
+			'item_type'     => $item_type,
+			'item_title'    => $item_title,
+			'error_message' => $error,
+			'timestamp'     => time(),
+			'retry_count'   => 0,
+		);
+	}
+
+	/**
+	 * Flush buffered failed items to the database.
+	 *
+	 * @since 2.2.0
+	 */
+	public function flush_failed_items() {
+		if ( empty( $this->pending_failed_items ) ) {
+			return;
+		}
+
+		$failed_items = (array) $this->options_handler->get_option_no_cache( 'failed_items', array() );
+
+		foreach ( $this->pending_failed_items as $key => $item ) {
+			// Preserve retry_count if re-failing during a retry.
+			if ( isset( $failed_items[ $key ] ) ) {
+				$item['retry_count'] = (int) $failed_items[ $key ]['retry_count'] + 1;
+			}
+			$failed_items[ $key ] = $item;
+		}
+
+		$this->options_handler->update_option( 'failed_items', $failed_items );
+		$this->pending_failed_items = array();
+	}
+
+	/**
+	 * Get all recorded failed items.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return array Array of failed item records.
+	 */
+	public function get_failed_items() {
+		return (array) $this->options_handler->get_option_no_cache( 'failed_items', array() );
+	}
+
+	/**
+	 * Get the count of tracked failed items.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return int The number of failed items.
+	 */
+	public function get_failed_items_count() {
+		return count( $this->get_failed_items() );
+	}
+
+	/**
+	 * Check if there are any recorded failed items.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return bool True if there are failed items, false otherwise.
+	 */
+	public function has_failed_items() {
+		return $this->get_failed_items_count() > 0;
+	}
+
+	/**
+	 * Clear all failed items.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function clear_failed_items() {
+		$this->options_handler->delete_option( 'failed_items' );
+		$this->pending_failed_items = array();
+	}
+
+	/**
+	 * Display the action buttons (Import, Pause, Resume, Abort, Retry Failed).
+	 *
+	 * @since 2.2.0
+	 */
+	public function display_action_buttons() {
+		?>
+		<div class="geodir-converter-actions mt-3 d-flex flex-wrap gap-2 align-items-center">
+			<button type="button" class="btn btn-primary btn-sm geodir-converter-import">
+				<i class="fas fa-play me-1"></i><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?>
+			</button>
+			<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort" disabled>
+				<i class="fas fa-stop me-1"></i><?php esc_html_e( 'Abort', 'geodir-converter' ); ?>
+			</button>
+			<button type="button" class="btn btn-outline-warning btn-sm geodir-converter-retry-failed d-none">
+				<i class="fas fa-redo me-1"></i><?php esc_html_e( 'Retry Failed', 'geodir-converter' ); ?>
+			</button>
+		</div>
+		<?php
 	}
 
 	/**
@@ -1092,7 +1558,7 @@ abstract class GeoDir_Converter_Importer {
                 FROM {$wpdb->postmeta} pm
                 INNER JOIN {$wpdb->posts} p ON p.ID = pm.post_id
                 WHERE pm.meta_key = %s
-                AND pm.meta_value = %d
+                AND pm.meta_value = %s
                 LIMIT 1",
 				$meta_key,
 				$post_id
@@ -1105,8 +1571,10 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Retrieves the import log with optional skipping.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param int $skip_logs Number of logs to skip. Defaults to 0.
-	 * @return array The filtered import log.
+	 * @return array The filtered import log entries.
 	 */
 	public function get_logs( $skip_logs = 0 ) {
 		$logs = $this->options_handler->get_option_no_cache( 'import_log', array() );
@@ -1123,30 +1591,52 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Log a message.
 	 *
+	 * Buffers the log entry in memory. Call flush_logs() to write to the database.
+	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $message The message to log.
-	 * @param string $status The status of log message (info, warning, error).
+	 * @param string $status  The status of log message. Accepts 'info', 'success', 'warning', 'error'. Default 'info'.
+	 * @return void
 	 */
 	public function log( $message, $status = 'info' ) {
-		$logs         = $this->options_handler->get_option_no_cache( 'import_log', array() );
 		$start_time   = $this->options_handler->get_option( 'import_start_time' );
 		$current_time = time();
 		$elapsed      = $start_time ? $current_time - $start_time : 0;
 		$formatted    = $this->format_elapsed_time( $elapsed );
 
-		$logs[] = array(
+		$this->logs_buffer[] = array(
 			'message'   => "{$formatted} – {$message}",
 			'status'    => $status,
 			'timestamp' => gmdate( 'Y-m-d H:i:s', $current_time ),
 		);
+	}
 
+	/**
+	 * Flush buffered log entries to the database in a single write.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function flush_logs() {
+		if ( empty( $this->logs_buffer ) ) {
+			return;
+		}
+
+		$logs = $this->options_handler->get_option_no_cache( 'import_log', array() );
+		$logs = array_merge( $logs, $this->logs_buffer );
 		$this->options_handler->update_option( 'import_log', $logs );
+		$this->logs_buffer = array();
 	}
 
 	/**
 	 * Converts a log entry into HTML format.
 	 *
-	 * @param array $log Log entry ["status", "message"].
-	 * @param bool  $inline Indicates whether the log should be displayed inline.
+	 * @since 2.0.2
+	 *
+	 * @param array $log    Log entry with 'status' and 'message' keys.
+	 * @param bool  $inline Whether the log should be displayed inline. Default false.
 	 * @return string HTML representation of the log entry.
 	 */
 	public function log_to_html( array $log, bool $inline = false ) {
@@ -1173,9 +1663,11 @@ abstract class GeoDir_Converter_Importer {
 	/**
 	 * Converts an array of logs into HTML format.
 	 *
-	 * @param array $logs An array of log entries.
-	 * @param bool  $inline Indicates whether the logs should be displayed inline.
-	 * @return array HTML representations of the log entries.
+	 * @since 2.0.2
+	 *
+	 * @param array $logs   An array of log entries.
+	 * @param bool  $inline Whether the logs should be displayed inline. Default false.
+	 * @return array Array of HTML string representations of the log entries.
 	 */
 	public function logs_to_html( array $logs, bool $inline = false ) {
 		$logs_html = array();
@@ -1186,10 +1678,12 @@ abstract class GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Format elapsed time in H:i:s
+	 * Format elapsed time in H:i:s format.
+	 *
+	 * @since 2.2.0
 	 *
 	 * @param int $seconds Number of seconds since start.
-	 * @return string
+	 * @return string Formatted time string (e.g. '01:23:45').
 	 */
 	private function format_elapsed_time( $seconds ) {
 		$hours   = floor( $seconds / 3600 );

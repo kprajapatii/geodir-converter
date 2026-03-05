@@ -13,4 +13,9 @@ use Exception;
 
 defined( 'ABSPATH' ) || exit;
 
-class GeoDir_Converter_Execution_Time_Exception extends Exception {};
+/**
+ * Exception thrown when the execution time limit is reached during import.
+ *
+ * @since 1.0.0
+ */
+class GeoDir_Converter_Execution_Time_Exception extends Exception {}

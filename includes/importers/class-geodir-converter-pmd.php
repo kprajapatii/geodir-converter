@@ -151,7 +151,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Initialize hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	protected function init() {
 		$this->url = $this->get_import_setting( 'site_url' );
@@ -161,21 +163,11 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'PhpMyDirectory', 'geodir-converter' );
@@ -184,7 +176,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings, events, users and invoices from your PhpMyDirectory installation.', 'geodir-converter' );
@@ -193,7 +187,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer icon URL.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/pmd.jpeg';
@@ -202,7 +198,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The first import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_USERS;
@@ -210,6 +208,10 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		$users       = count_users();
@@ -243,20 +245,17 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2">
-					<?php esc_html_e( 'Start Import', 'geodir-converter' ); ?>
-				</button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort">
-					<?php esc_html_e( 'Abort', 'geodir-converter' ); ?>
-				</button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
 
 	/**
 	 * Render form fields for the importer settings.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	private function display_form_fields() {
 		$import_settings  = (array) $this->options_handler->get_option( 'import_settings', array() );
@@ -333,10 +332,11 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
-	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$errors = array();
@@ -393,6 +393,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 	/**
 	 * Test the database connection and required tables.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param array $settings Validated settings.
 	 * @return true|WP_Error True on success, WP_Error on failure.
@@ -482,7 +484,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Get or create the database connection.
 	 *
-	 * @return GeoDir_Converter_WPDB|WP_Error
+	 * @since 2.0.2
+	 *
+	 * @return GeoDir_Converter_WPDB|WP_Error The database connection instance or WP_Error on failure.
 	 */
 	protected function get_db_connection() {
 		try {
@@ -520,8 +524,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Get next task.
 	 *
-	 * @param array $task The current task.
+	 * @since 2.0.2
 	 *
+	 * @param array $task The current task.
 	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function next_task( $task ) {
@@ -560,8 +565,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import users from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
+	 * @param array $task Import task details.
 	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
@@ -591,6 +596,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of users */
 			$this->log( sprintf( __( 'Starting user import: %d users found.', 'geodir-converter' ), $total_users ) );
 		}
 
@@ -685,11 +691,13 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		$complete = ( $offset + $batch_size >= $total_users );
 
 		if ( ! $complete ) {
+			/* translators: %1$d: processed count, %2$d: total count */
 			$this->log( sprintf( __( 'Batch complete. Progress: %1$d/%2$d users imported.', 'geodir-converter' ), ( $imported + $failed + $skipped ), $total_users ) );
 			$task['offset'] = $offset + $batch_size;
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'User import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -706,6 +714,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 	/**
 	 * Map PMD user group to WordPress role.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param int $group_id The PMD group ID.
 	 * @return string The corresponding WordPress role.
@@ -726,8 +736,11 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Update user meta data.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param int    $user_id The WordPress user ID.
-	 * @param object $user The original user data from PMD.
+	 * @param object $user    The original user data from PMD.
+	 * @return void
 	 */
 	private function update_user_meta( $user_id, $user ) {
 		$meta_fields = array(
@@ -765,8 +778,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import products from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
+	 * @param array $task Import task details.
 	 * @return array Result of the import operation.
 	 * @throws Exception If database connection fails.
 	 */
@@ -802,6 +815,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of products */
 			$this->log( sprintf( __( 'Starting products import: %d products found.', 'geodir-converter' ), $total_products ) );
 		}
 
@@ -901,9 +915,11 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			$package_id   = GeoDir_Pricing_Package::insert_package( $package_data );
 
 			if ( ! $package_id || is_wp_error( $package_id ) ) {
+				/* translators: %s: plan name */
 				$this->log( sprintf( __( 'Failed to import plan: %s', 'geodir-converter' ), $plan_label ), 'error' );
 				++$failed;
 			} else {
+				/* translators: %s: plan name */
 				$log_message = $existing_package
 					? sprintf( __( 'Updated plan: %s', 'geodir-converter' ), $plan_label )
 					: sprintf( __( 'Imported new plan: %s', 'geodir-converter' ), $plan_label );
@@ -936,6 +952,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d products imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_products
@@ -945,6 +962,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Products import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -962,6 +980,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Get the time unit based on the period.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $period The period to convert.
 	 * @return string The time unit.
 	 */
@@ -977,11 +997,13 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get existing package based on BDP package ID or find a suitable free package.
+	 * Get existing package based on PMD package ID or find a suitable free package.
 	 *
-	 * @param string  $post_type     The post type associated with the package.
-	 * @param int     $package_id    The package ID.
-	 * @param boolean $free_fallback Whether to fallback to a free package if no match is found.
+	 * @since 2.0.2
+	 *
+	 * @param string $post_type     The post type associated with the package.
+	 * @param int    $package_id    The package ID.
+	 * @param bool   $free_fallback Whether to fallback to a free package if no match is found.
 	 * @return object|null The existing package object if found, or null otherwise.
 	 */
 	private function get_existing_package( $post_type, $package_id, $free_fallback = true ) {
@@ -1021,8 +1043,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import custom fields from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
+	 * @param array $task Import task details.
 	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
@@ -1063,6 +1085,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of fields */
 			$this->log( sprintf( __( 'Starting custom fields import: %d fields found.', 'geodir-converter' ), $total_fields ) );
 		}
 
@@ -1125,6 +1148,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			// Skip fields that shouldn't be imported.
 			if ( $this->should_skip_field( $gd_field['htmlvar_name'] ) ) {
 				++$skipped;
+				/* translators: %s: field name */
 				$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field->name ), 'warning' );
 				continue;
 			}
@@ -1136,31 +1160,25 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 				continue;
 			}
 
-			if ( $gd_field && geodir_custom_field_save( $gd_field ) ) {
-				$column_exists ? ++$updated : ++$imported;
-			} else {
-				++$failed;
-				$this->log( sprintf( __( 'Failed to import custom field: %s', 'geodir-converter' ), $field->name ), 'error' );
-			}
-
-			// Add the custom field.
 			$result = geodir_custom_field_save( $gd_field );
 
-			if ( is_wp_error( $result ) ) {
+			if ( is_wp_error( $result ) || ! $result ) {
+				++$failed;
 				$this->log(
 					sprintf(
+						/* translators: %1$s: field name, %2$s: error message */
 						__( 'Failed to import field %1$s: %2$s', 'geodir-converter' ),
 						$field->name,
-						$result->get_error_message()
-					)
+						is_wp_error( $result ) ? $result->get_error_message() : __( 'Unknown error', 'geodir-converter' )
+					),
+					'error'
 				);
-				++$failed;
 				continue;
 			}
 
 			$mapped_fields[] = $gd_field_key;
 
-			++$imported;
+			$column_exists ? ++$updated : ++$imported;
 		}
 
 		// Update task progress.
@@ -1179,6 +1197,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d fields imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_fields
@@ -1188,6 +1207,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Custom fields import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -1205,8 +1225,10 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Import standard fields from PMD to GeoDirectory.
 	 *
-	 * @param string $post_type The post type to import standard fields for.
 	 * @since 2.0.2
+	 *
+	 * @param string $post_type The post type to import standard fields for.
+	 * @return void
 	 */
 	private function import_standard_fields( $post_type ) {
 		global $plugin_prefix;
@@ -1441,6 +1463,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			// Skip fields that shouldn't be imported.
 			if ( $this->should_skip_field( $gd_field['htmlvar_name'] ) ) {
 				++$skipped;
+				/* translators: %s: field name */
 				$this->log( sprintf( __( 'Skipped standard field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
 				continue;
 			}
@@ -1456,6 +1479,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 				$column_exists ? ++$updated : ++$imported;
 			} else {
 				++$failed;
+				/* translators: %s: field name */
 				$this->log( sprintf( __( 'Failed to import standard field: %s', 'geodir-converter' ), $field['label'] ), 'error' );
 			}
 		}
@@ -1466,6 +1490,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: skipped count, %4$d: failed count */
 				__( 'Standard fields import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -1480,8 +1505,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import categories from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
+	 * @param array $task Import task details.
 	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
@@ -1512,6 +1537,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of categories */
 			$this->log( sprintf( __( 'Starting category import: %d categories found.', 'geodir-converter' ), $total_categories ) );
 		}
 
@@ -1551,6 +1577,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			}
 
 			$category_data = array(
+				/* translators: %d: category ID */
 				'cat_name'        => ! empty( $category->title ) ? $category->title : sprintf( __( 'Category %d', 'geodir-converter' ), $category->id ),
 				'cat_description' => ! empty( $category->description ) ? $category->description : '',
 				'parent'          => $parent_term_id,
@@ -1579,6 +1606,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 				if ( is_wp_error( $term ) ) {
 					$this->log(
 						sprintf(
+							/* translators: %1$s: category name, %2$s: error message */
 							__( 'Failed to import category %1$s: %2$s', 'geodir-converter' ),
 							$category->title,
 							$term->get_error_message()
@@ -1607,6 +1635,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 				if ( ! $this->import_category_image( $term_id, $category->small_image_url, 'ct_cat_icon' ) ) {
 					$this->log(
 						sprintf(
+							/* translators: %1$s: image identifier */
 							__( 'Failed to import category image %1$s', 'geodir-converter' ),
 							$category->small_image_url,
 						)
@@ -1626,6 +1655,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 				if ( ! $this->import_category_image( $term_id, $category->large_image_url, 'ct_cat_default_img' ) ) {
 					$this->log(
 						sprintf(
+							/* translators: %1$s: image identifier */
 							__( 'Failed to import category image %1$s', 'geodir-converter' ),
 							$category->large_image_url,
 						)
@@ -1660,6 +1690,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d categories imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_categories
@@ -1669,6 +1700,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Category import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -1684,11 +1716,11 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import categories from PMD to GeoDirectory.
+	 * Import blog categories from PMD to WordPress.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
+	 * @param array $task Import task details.
 	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
@@ -1716,6 +1748,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of categories */
 			$this->log( sprintf( __( 'Starting blog category import: %d categories found.', 'geodir-converter' ), $total_categories ) );
 		}
 
@@ -1743,7 +1776,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -1757,6 +1790,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		foreach ( $categories as $category ) {
 			$category_data = array(
+				/* translators: %d: category ID */
 				'cat_name' => ! empty( $category->title ) ? $category->title : sprintf( __( 'Category %d', 'geodir-converter' ), $category->id ),
 			);
 
@@ -1781,6 +1815,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 				if ( is_wp_error( $term ) ) {
 					$this->log(
 						sprintf(
+							/* translators: %1$s: category name, %2$s: error message */
 							__( 'Failed to import category %1$s: %2$s', 'geodir-converter' ),
 							$category->title,
 							$term->get_error_message()
@@ -1814,6 +1849,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d blog categories imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_categories
@@ -1823,6 +1859,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Blog category import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -1838,11 +1875,11 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import categories from PMD to GeoDirectory.
+	 * Import event categories from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
+	 * @param array $task Import task details.
 	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
@@ -1858,7 +1895,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		$imported         = isset( $task['imported'] ) ? absint( $task['imported'] ) : 0;
 		$failed           = isset( $task['failed'] ) ? absint( $task['failed'] ) : 0;
 		$skipped          = isset( $task['skipped'] ) ? absint( $task['skipped'] ) : 0;
-		$total_categories = isset( $task['total_events_categories'] ) ? absint( $task['total_event_categories'] ) : 0;
+		$total_categories = isset( $task['total_events_categories'] ) ? absint( $task['total_events_categories'] ) : 0;
 		$batch_size       = absint( $this->get_batch_size() );
 		$categories_table = $this->db_prefix . 'events_categories';
 		$post_type        = self::POST_TYPE_EVENTS;
@@ -1871,6 +1908,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of categories */
 			$this->log( sprintf( __( 'Starting event category import: %d categories found.', 'geodir-converter' ), $total_categories ) );
 		}
 
@@ -1898,7 +1936,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -1912,6 +1950,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		foreach ( $categories as $category ) {
 			$category_data = array(
+				/* translators: %d: category ID */
 				'cat_name' => ! empty( $category->title ) ? $category->title : sprintf( __( 'Category %d', 'geodir-converter' ), $category->id ),
 			);
 
@@ -1936,6 +1975,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 				if ( is_wp_error( $term ) ) {
 					$this->log(
 						sprintf(
+							/* translators: %1$s: category name, %2$s: error message */
 							__( 'Failed to import event category %1$s: %2$s', 'geodir-converter' ),
 							$category->title,
 							$term->get_error_message()
@@ -1969,6 +2009,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d event categories imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_categories
@@ -1978,6 +2019,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Event category import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -1995,11 +2037,12 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Import category image.
 	 *
-	 * @param int    $term_id Term ID.
-	 * @param string $image_url Image URL.
-	 * @param string $meta_key Meta key.
+	 * @since 2.0.2
 	 *
-	 * @return void
+	 * @param int    $term_id   Term ID.
+	 * @param string $image_url Image URL.
+	 * @param string $meta_key  Meta key.
+	 * @return bool True on success, false on failure.
 	 */
 	public function import_category_image( $term_id, $image_url, $meta_key ) {
 		$attachment_data = $this->import_attachment( $image_url );
@@ -2024,9 +2067,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import listings from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task The offset to start importing from.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task details.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
 	public function task_import_listings( array $task ) {
@@ -2038,9 +2081,6 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		wp_suspend_cache_addition( true );
 
 		$offset         = isset( $task['offset'] ) ? absint( $task['offset'] ) : 0;
-		$imported       = isset( $task['imported'] ) ? absint( $task['imported'] ) : 0;
-		$failed         = isset( $task['failed'] ) ? absint( $task['failed'] ) : 0;
-		$skipped        = isset( $task['skipped'] ) ? absint( $task['skipped'] ) : 0;
 		$total_listings = isset( $task['total_listings'] ) ? absint( $task['total_listings'] ) : 0;
 		$batch_size     = absint( $this->get_batch_size() );
 		$fields         = isset( $task['mapped_fields'] ) ? (array) $task['mapped_fields'] : array();
@@ -2054,6 +2094,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of listings */
 			$this->log( sprintf( __( 'Starting listing import: %d listings found.', 'geodir-converter' ), $total_listings ) );
 		}
 
@@ -2080,26 +2121,10 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		foreach ( $listings as $pmd_listing ) {
 			$listing = $this->import_single_listing( $pmd_listing, $fields );
 
-			if ( GeoDir_Converter_Importer::IMPORT_STATUS_SKIPPED === $listing ) {
-				++$skipped;
-				$this->log( sprintf( __( 'Skipped listing: %s', 'geodir-converter' ), $pmd_listing->title ), 'warning' );
-			} elseif ( GeoDir_Converter_Importer::IMPORT_STATUS_FAILED === $listing ) {
-				++$failed;
-				$this->log( sprintf( __( 'Failed import: %s', 'geodir-converter' ), $pmd_listing->title ), 'error' );
-			} elseif ( GeoDir_Converter_Importer::IMPORT_STATUS_SUCCESS === $listing ) {
-				++$imported;
-				$this->log( sprintf( __( 'Imported listing: %s', 'geodir-converter' ), $pmd_listing->title ) );
-			}
+			$this->process_import_result( $listing, 'listing', $pmd_listing->title, $pmd_listing->id );
 		}
 
-		// Update task progress.
-		$task['imported'] = (int) $imported;
-		$task['failed']   = (int) $failed;
-		$task['skipped']  = (int) $skipped;
-
-		$this->increase_succeed_imports( (int) $imported );
-		$this->increase_skipped_imports( (int) $skipped );
-		$this->increase_failed_imports( (int) $failed );
+		$this->flush_failed_items();
 
 		$complete = ( $offset + $batch_size >= $total_listings );
 
@@ -2109,24 +2134,17 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
-		$message = sprintf(
-			__( 'Import completed: %1$d/%2$d listings processed. Imported: %3$d, Failed: %4$d.', 'geodir-converter' ),
-			( $imported + $failed + $skipped ),
-			$total_listings,
-			$imported,
-			$failed
-		);
-
-		$this->log( $message, 'success' );
-
 		return $this->next_task( $task );
 	}
 
 	/**
 	 * Import a single listing from PMD to GeoDirectory.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param object $listing The listing to import.
-	 * @return int Import status (GeoDir_Converter_Importer::IMPORT_STATUS_SUCCESS, GeoDir_Converter_Importer::IMPORT_STATUS_SKIPPED, GeoDir_Converter_Importer::IMPORT_STATUS_FAILED).
+	 * @param array  $fields  The mapped custom fields.
+	 * @return int Import status constant (IMPORT_STATUS_SUCCESS, IMPORT_STATUS_SKIPPED, or IMPORT_STATUS_FAILED).
 	 */
 	public function import_single_listing( $listing, $fields ) {
 		// Check if the post has already been imported.
@@ -2274,8 +2292,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Get gallery images.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param int $listing_id The listing ID.
-	 * @return string
+	 * @return string The formatted images string.
 	 */
 	private function get_listing_images( $listing_id ) {
 		$db         = $this->get_db_connection();
@@ -2292,7 +2311,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 				$id = absint( $image->id );
 
 				if ( ! in_array( strtolower( $image->extension ), $extensions, true ) ) {
-					return;
+					return null;
 				}
 
 				$title       = preg_replace( '/[^A-Za-z0-9 ]/', '', $image->title );
@@ -2307,6 +2326,13 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			},
 			$images
 		);
+
+		// Remove null entries from filtered-out non-image files.
+		$images = array_filter( $images );
+
+		if ( empty( $images ) ) {
+			return '';
+		}
 
 		usort(
 			$images,
@@ -2332,6 +2358,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Retrieves the location data for a given location ID.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param int $location_id The ID of the location to retrieve.
 	 * @return array The location data.
 	 */
@@ -2349,20 +2377,26 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		if ( $location_id ) {
 			$db        = $this->get_db_connection();
-			$table     = $db->prefix . 'locations';
+			$table     = $this->db_prefix . 'locations';
 			$locations = $db->get_results( "SELECT * FROM {$table} AS l ORDER BY l.id ASC" );
 
-			$location_ids = wp_list_pluck( $locations, 'friendly_url', 'id' );
+			// Build lookup arrays keyed by ID and by friendly_url.
+			$locations_by_id   = array();
+			$locations_by_slug = array();
+			foreach ( $locations as $loc ) {
+				$locations_by_id[ $loc->id ]             = $loc;
+				$locations_by_slug[ $loc->friendly_url ] = $loc->title;
+			}
 
-			if ( isset( $location_ids[ $location_id ] ) ) {
-				$row = $locations[ $location_id ];
+			if ( isset( $locations_by_id[ $location_id ] ) ) {
+				$row = $locations_by_id[ $location_id ];
 
 				if ( $row->level > 1 ) {
 					$friendly_urls = explode( '/', trim( $row->friendly_url_path, '/\\' ) );
 
 					foreach ( $friendly_urls as $key => $slug ) {
-						if ( isset( $location_ids[ $slug ] ) ) {
-							$friendly_urls[ $key ] = $location_ids[ $slug ];
+						if ( isset( $locations_by_slug[ $slug ] ) ) {
+							$friendly_urls[ $key ] = $locations_by_slug[ $slug ];
 						}
 					}
 
@@ -2377,6 +2411,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 	/**
 	 * Retrieves the categories for a given listing.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param object $listing The listing object.
 	 * @return array The categories.
@@ -2410,7 +2446,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Get business hours.
 	 *
-	 * @param array $hours The hours to convert.
+	 * @since 2.0.2
+	 *
+	 * @param array $hours  The hours to convert.
 	 * @param int   $offset The offset to use.
 	 * @return string The converted hours.
 	 */
@@ -2460,9 +2498,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import events from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task details.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
 	public function task_import_events( array $task ) {
@@ -2502,6 +2540,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of events */
 			$this->log( sprintf( __( 'Starting events import: %d events found.', 'geodir-converter' ), $total_events ) );
 		}
 
@@ -2510,6 +2549,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			$this->log( __( 'No events available for import. Skipping...', 'geodir-converter' ) );
 			return $this->next_task( $task );
 		}
+
+		// Load user mapping.
+		$user_mapping = (array) $this->options_handler->get_option_no_cache( 'user_mapping', array() );
 
 		// Get events for current batch.
 		$events = $db->get_results(
@@ -2633,8 +2675,11 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			}
 
 			if ( is_wp_error( $gd_event_id ) ) {
+				/* translators: %s: event ID */
 				$this->log( sprintf( __( 'Failed to import event %s.', 'geodir-converter' ), $event->id ) );
 				++$failed;
+				/* translators: %s: event ID */
+				$this->record_failed_item( $event->id, self::ACTION_IMPORT_EVENTS, 'event', $event->title, sprintf( __( 'Failed to import event %s.', 'geodir-converter' ), $event->id ) );
 				continue;
 			}
 
@@ -2660,11 +2705,14 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		$this->increase_failed_imports( $failed );
 		$this->increase_skipped_imports( $skipped );
 
+		$this->flush_failed_items();
+
 		$complete = ( $offset + $batch_size >= $total_events );
 
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d events imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_events
@@ -2674,6 +2722,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Events import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -2692,9 +2741,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import reviews from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task details.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
 	public function task_import_reviews( array $task ) {
@@ -2725,6 +2774,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of reviews */
 			$this->log( sprintf( __( 'Starting reviews import: %d reviews found.', 'geodir-converter' ), $total_reviews ) );
 		}
 
@@ -2772,6 +2822,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 			$listing_id = isset( $listings_mapping[ (int) $review->listing_id ] ) ? $listings_mapping[ (int) $review->listing_id ] : 0;
 			if ( ! $listing_id ) {
+				/* translators: %s: review ID */
 				$this->log( sprintf( __( 'Failed to import review %s.', 'geodir-converter' ), $review->review_id ) );
 				++$failed;
 				continue;
@@ -2809,6 +2860,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			}
 
 			if ( is_wp_error( $comment_id ) ) {
+				/* translators: %s: review ID */
 				$this->log( sprintf( __( 'Failed to import review %s.', 'geodir-converter' ), $review->review_id ) );
 				++$failed;
 				continue;
@@ -2849,6 +2901,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d reviews imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_reviews
@@ -2858,6 +2911,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Reviews import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -2873,12 +2927,12 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import posts from PMD to GeoDirectory.
+	 * Import posts from PMD to WordPress.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task details.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
 	public function task_import_posts( array $task ) {
@@ -2907,6 +2961,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of posts */
 			$this->log( sprintf( __( 'Starting posts import: %d posts found.', 'geodir-converter' ), $total_posts ) );
 		}
 
@@ -2964,6 +3019,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			}
 
 			if ( is_wp_error( $post_id ) ) {
+				/* translators: %s: post title */
 				$this->log( sprintf( __( 'Failed to import post %s.', 'geodir-converter' ), $post->title ) );
 				++$failed;
 				continue;
@@ -3011,6 +3067,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d posts imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_posts
@@ -3020,6 +3077,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Post import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -3035,10 +3093,13 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Retrieves the categories for a given listing.
+	 * Retrieves the categories for a given post.
 	 *
-	 * @param int    $post_id The post ID.
-	 * @param string $post_type The post type.
+	 * @since 2.0.2
+	 *
+	 * @param int    $post_id   The post ID.
+	 * @param string $table     The PMD table name prefix for categories lookup.
+	 * @param string $column_id The column name for the post ID in the lookup table.
 	 * @return array The categories.
 	 */
 	public function get_post_categories( $post_id, $table = 'blog', $column_id = 'blog_id' ) {
@@ -3065,12 +3126,12 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import pages from PMD to GeoDirectory.
+	 * Import pages from PMD to WordPress.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task details.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
 	public function task_import_pages( array $task ) {
@@ -3097,6 +3158,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of pages */
 			$this->log( sprintf( __( 'Starting pages import: %d pages found.', 'geodir-converter' ), $total_pages ) );
 		}
 
@@ -3157,6 +3219,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			}
 
 			if ( is_wp_error( $page_id ) ) {
+				/* translators: %s: page title */
 				$this->log( sprintf( __( 'Failed to import page %s.', 'geodir-converter' ), $page->title ) );
 				++$failed;
 				continue;
@@ -3182,6 +3245,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d pages imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_pages
@@ -3191,6 +3255,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Page import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -3206,12 +3271,12 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Import comments from PMD to GeoDirectory.
+	 * Import comments from PMD to WordPress.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task details.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
 	public function task_import_comments( array $task ) {
@@ -3240,6 +3305,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of comments */
 			$this->log( sprintf( __( 'Starting comments import: %d comments found.', 'geodir-converter' ), $total_comments ) );
 		}
 
@@ -3286,6 +3352,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			);
 
 			if ( ! isset( $posts_mapping[ $comment->blog_id ] ) ) {
+				/* translators: %s: comment ID */
 				$this->log( sprintf( __( 'Failed to import comment %s.', 'geodir-converter' ), $comment->comment_id ) );
 				++$failed;
 				continue;
@@ -3327,6 +3394,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			}
 
 			if ( is_wp_error( $comment_id ) ) {
+				/* translators: %s: comment ID */
 				$this->log( sprintf( __( 'Failed to import comment %s.', 'geodir-converter' ), $comment->comment_id ) );
 				++$failed;
 				continue;
@@ -3349,6 +3417,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d comments imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_comments
@@ -3358,6 +3427,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Comments import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -3376,9 +3446,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import discounts from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task details.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
 	public function task_import_discounts( array $task ) {
@@ -3405,6 +3475,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of discounts */
 			$this->log( sprintf( __( 'Starting discounts import: %d discounts found.', 'geodir-converter' ), $total_discounts ) );
 		}
 
@@ -3484,6 +3555,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			$discount_id = $wpinv_discount->save();
 
 			if ( is_wp_error( $discount_id ) ) {
+				/* translators: %s: discount title */
 				$this->log( sprintf( __( 'Failed to import discount %s.', 'geodir-converter' ), $discount->title ) );
 				++$failed;
 				continue;
@@ -3506,6 +3578,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d discounts imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_discounts
@@ -3515,6 +3588,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Discount import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -3533,9 +3607,9 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Import invoices from PMD to GeoDirectory.
 	 *
 	 * @since 2.0.2
-	 * @param array $task Import task details.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task details.
+	 * @return array|false Result of the import operation or false if import is complete.
 	 * @throws Exception If database connection fails.
 	 */
 	public function task_import_invoices( array $task ) {
@@ -3568,6 +3642,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 
 		// Log the import start message only for the first batch.
 		if ( 0 === $offset ) {
+			/* translators: %d: number of invoices */
 			$this->log( sprintf( __( 'Starting invoices import: %d invoices found.', 'geodir-converter' ), $total_invoices ) );
 		}
 
@@ -3701,6 +3776,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			$wpi_invoice_id = $wpi_invoice->save();
 
 			if ( is_wp_error( $wpi_invoice_id ) ) {
+				/* translators: %s: invoice title */
 				$this->log( sprintf( __( 'Failed to import invoice %s.', 'geodir-converter' ), $invoice->title ) );
 				++$failed;
 				continue;
@@ -3726,6 +3802,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 		if ( ! $complete ) {
 			$this->log(
 				sprintf(
+					/* translators: %1$d: processed count, %2$d: total count */
 					__( 'Batch complete. Progress: %1$d/%2$d invoices imported.', 'geodir-converter' ),
 					( $imported + $failed + $skipped ),
 					$total_invoices
@@ -3735,6 +3812,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 			return $task;
 		}
 
+		/* translators: %1$d: processed count, %2$d: total count, %3$d: imported, %4$d: failed, %5$d: skipped */
 		$message = sprintf(
 			__( 'Invoice import completed: %1$d/%2$d processed. Imported: %3$d, Failed: %4$d, Skipped: %5$d.', 'geodir-converter' ),
 			( $imported + $failed + $skipped ),
@@ -3752,6 +3830,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Generate a unique GD field key.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $field_name The field name.
 	 * @return string The generated GD field key.
 	 */
@@ -3766,6 +3846,7 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * Get the corresponding GD field key for a given shortname.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param string $shortname The field shortname.
 	 * @return string The mapped field key or the original shortname if no match is found.
 	 */
@@ -3786,8 +3867,10 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Map PMD field type to GeoDirectory field type.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $field_type The PMD field type.
-	 * @return string|false The GeoDirectory field type or false if not supported.
+	 * @return string The GeoDirectory field type.
 	 */
 	private function map_field_type( $field_type ) {
 		switch ( $field_type ) {
@@ -3827,10 +3910,12 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Map PMD field type to GeoDirectory field type.
+	 * Map PMD field type to GeoDirectory data type.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $field_type The PMD field type.
-	 * @return string|false The GeoDirectory field type or false if not supported.
+	 * @return string The GeoDirectory data type.
 	 */
 	private function map_data_type( $field_type ) {
 		switch ( $field_type ) {
@@ -3864,6 +3949,8 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	/**
 	 * Get field options for select, radio, checkbox fields.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $field_options The field options.
 	 * @return string The formatted options string.
 	 */
@@ -3892,10 +3979,11 @@ class GeoDir_Converter_PMD extends GeoDir_Converter_Importer {
 	 * passwords and automatically upgrades their password to WordPress format
 	 * after successful authentication.
 	 *
-	 * @since 1.0.0
+	 * @since 2.0.2
+	 *
 	 * @param WP_User|WP_Error|null $user     WP_User object if the user is authenticated.
 	 * @param string                $password The password in plain text.
-	 * @return WP_User|WP_Error|null         The authenticated user or the original response.
+	 * @return WP_User|WP_Error|null The authenticated user or the original response.
 	 */
 	public function handle_user_login( $user, $password ) {
 		// Return early if no valid user object.

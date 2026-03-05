@@ -52,6 +52,15 @@ class GeoDir_Converter_Ajax {
 		'abort'                => array(
 			'method' => 'POST',
 		),
+		'pause'                => array(
+			'method' => 'POST',
+		),
+		'resume'               => array(
+			'method' => 'POST',
+		),
+		'retry_failed'         => array(
+			'method' => 'POST',
+		),
 		'upload'               => array(
 			'method' => 'POST',
 		),
@@ -83,6 +92,8 @@ class GeoDir_Converter_Ajax {
 
 	/**
 	 * Ajax constructor.
+	 *
+	 * @since 2.0.2
 	 */
 	public function __construct() {
 		foreach ( $this->ajax_actions as $action => $details ) {
@@ -94,7 +105,9 @@ class GeoDir_Converter_Ajax {
 	/**
 	 * Retrieves input data for processing AJAX requests.
 	 *
-	 * @param string $action The name of the AJAX action without the 'wp' prefix.
+	 * @since 2.0.2
+	 *
+	 * @param string $action The name of the AJAX action without the prefix.
 	 * @return array An array containing input data for the AJAX request.
 	 */
 	protected function get_request_input( $action ) {
@@ -117,6 +130,8 @@ class GeoDir_Converter_Ajax {
 	/**
 	 * Retrieve nonces for AJAX actions.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @return array Nonces for AJAX actions.
 	 */
 	public function get_nonces() {
@@ -131,8 +146,11 @@ class GeoDir_Converter_Ajax {
 	/**
 	 * Add AJAX action hooks.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $action  AJAX action name.
 	 * @param bool   $no_priv Whether the action is available for non-logged in users.
+	 * @return void
 	 */
 	public function add_ajax_action( $action, $no_priv = false ) {
 		add_action( 'wp_ajax_' . $this->action_prefix . $action, array( $this, $action ) );
@@ -144,6 +162,8 @@ class GeoDir_Converter_Ajax {
 
 	/**
 	 * Check the validity of the nonce.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $action AJAX action name.
 	 * @return bool True if the nonce is valid, otherwise false.
@@ -163,7 +183,12 @@ class GeoDir_Converter_Ajax {
 	/**
 	 * Verify the validity of the nonce.
 	 *
+	 * Sends a JSON error response and terminates if the nonce is invalid.
+	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $action AJAX action name.
+	 * @return void
 	 */
 	protected function verify_nonce( $action ) {
 		if ( ! $this->check_nonce( $action ) ) {
@@ -206,6 +231,10 @@ class GeoDir_Converter_Ajax {
 
 	/**
 	 * AJAX handler for starting the import process.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function import() {
 		$this->verify_nonce( __FUNCTION__ );
@@ -243,6 +272,10 @@ class GeoDir_Converter_Ajax {
 
 	/**
 	 * AJAX handler for getting import progress.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function progress() {
 		$this->verify_nonce( __FUNCTION__ );
@@ -260,16 +293,28 @@ class GeoDir_Converter_Ajax {
 			$this->send_json_error( $importer->get_error_message() );
 		}
 
-		$progress    = $importer->get_progress();
-		$in_progress = $importer->background_process->is_in_progress();
-		$logs        = $importer->get_logs( $logs_shown );
+		$progress           = $importer->get_progress();
+		$in_progress        = $importer->background_process->is_in_progress();
+		$is_paused          = $importer->background_process->is_paused();
+		$failed_items_count = $importer->get_failed_items_count();
+		$stats              = $importer->get_stats();
+		$start_time         = $importer->options_handler->get_option( 'import_start_time', 0 );
+		$elapsed            = $start_time ? ( time() - (int) $start_time ) : 0;
+		$logs               = $importer->get_logs( $logs_shown );
 
 		// Build notice.
 		if ( ! $in_progress ) {
-			$logs[] = array(
-				'message' => __( 'Import completed.', 'geodir-converter' ),
-				'status'  => 'success',
-			);
+			if ( $is_paused ) {
+				$logs[] = array(
+					'message' => __( 'Import paused.', 'geodir-converter' ),
+					'status'  => 'warning',
+				);
+			} else {
+				$logs[] = array(
+					'message' => __( 'Import completed.', 'geodir-converter' ),
+					'status'  => 'success',
+				);
+			}
 		}
 
 		// Calculate new "logs_shown".
@@ -277,20 +322,34 @@ class GeoDir_Converter_Ajax {
 
 		wp_send_json_success(
 			array(
-				'progress'   => $progress,
-				'message'    => sprintf(
+				'progress'         => $progress,
+				/* translators: %d: progress percentage */
+				'message'          => sprintf(
 					__( 'Import progress: %d%%', 'geodir-converter' ),
 					$progress
 				),
-				'logsShown'  => $logs_shown,
-				'logs'       => $importer->logs_to_html( $logs ),
-				'inProgress' => (bool) $in_progress,
+				'logsShown'        => $logs_shown,
+				'logs'             => $importer->logs_to_html( $logs ),
+				'inProgress'       => (bool) $in_progress,
+				'isPaused'         => (bool) $is_paused,
+				'failedItemsCount' => (int) $failed_items_count,
+				'stats'            => array(
+					'total'   => (int) $stats['total'],
+					'succeed' => (int) $stats['succeed'],
+					'skipped' => (int) $stats['skipped'],
+					'failed'  => (int) $stats['failed'],
+				),
+				'elapsed'          => (int) $elapsed,
 			)
 		);
 	}
 
 	/**
 	 * AJAX handler for uploading CSV file.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function upload() {
 		$this->verify_nonce( __FUNCTION__ );
@@ -330,6 +389,7 @@ class GeoDir_Converter_Ajax {
 		$max_size = wp_max_upload_size();
 		if ( $file['size'] > $max_size ) {
 			$this->send_json_error(
+				/* translators: %s: maximum file size */
 				sprintf(
 					__( 'File size exceeds the maximum limit of %s. Please upload a smaller file.', 'geodir-converter' ),
 					size_format( $max_size )
@@ -352,6 +412,7 @@ class GeoDir_Converter_Ajax {
 
 		if ( ! in_array( $mime, $allowed_mimes, true ) ) {
 			$this->send_json_error(
+				/* translators: %s: detected file type */
 				sprintf(
 					__( 'Invalid file format detected (%s). Please upload a valid CSV file.', 'geodir-converter' ),
 					esc_html( $mime )
@@ -387,6 +448,7 @@ class GeoDir_Converter_Ajax {
 
 		wp_send_json_success(
 			array(
+				/* translators: %1$s: file name, %2$d: number of rows */
 				'message'     => sprintf(
 					__( 'Successfully parsed %1$s: Found %2$d rows.', 'geodir-converter' ),
 					$module_type,
@@ -402,6 +464,10 @@ class GeoDir_Converter_Ajax {
 
 	/**
 	 * AJAX handler for aborting the import process.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function abort() {
 		$this->verify_nonce( __FUNCTION__ );
@@ -422,6 +488,108 @@ class GeoDir_Converter_Ajax {
 		$importer->background_process->abort();
 
 		wp_send_json_success();
+	}
+
+	/**
+	 * AJAX handler for pausing the import process.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function pause() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$importer_id = isset( $_POST['importerId'] ) ? sanitize_text_field( $_POST['importerId'] ) : '';
+		$importer    = $this->get_importer( $importer_id );
+
+		if ( is_wp_error( $importer ) ) {
+			$this->send_json_error( $importer->get_error_message() );
+		}
+
+		$importer->background_process->pause();
+		$importer->log( __( 'Import paused by user.', 'geodir-converter' ), 'warning' );
+
+		wp_send_json_success(
+			array(
+				'message' => __( 'Import paused.', 'geodir-converter' ),
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for resuming a paused import process.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function resume() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$importer_id = isset( $_POST['importerId'] ) ? sanitize_text_field( $_POST['importerId'] ) : '';
+		$importer    = $this->get_importer( $importer_id );
+
+		if ( is_wp_error( $importer ) ) {
+			$this->send_json_error( $importer->get_error_message() );
+		}
+
+		$importer->background_process->resume();
+		$importer->log( __( 'Import resumed.', 'geodir-converter' ), 'info' );
+
+		wp_send_json_success(
+			array(
+				'message' => __( 'Import resumed.', 'geodir-converter' ),
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler for retrying failed items.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function retry_failed() {
+		$this->verify_nonce( __FUNCTION__ );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			$this->send_json_error( __( 'You do not have permission to perform this action.', 'geodir-converter' ) );
+		}
+
+		$importer_id = isset( $_POST['importerId'] ) ? sanitize_text_field( $_POST['importerId'] ) : '';
+		$importer    = $this->get_importer( $importer_id );
+
+		if ( is_wp_error( $importer ) ) {
+			$this->send_json_error( $importer->get_error_message() );
+		}
+
+		if ( $importer->background_process->is_in_progress() ) {
+			$this->send_json_error( __( 'An import is already in progress.', 'geodir-converter' ) );
+		}
+
+		$result = $importer->background_process->retry_failed_items();
+
+		if ( ! $result ) {
+			$this->send_json_error( __( 'No failed items to retry.', 'geodir-converter' ) );
+		}
+
+		$importer->log( __( 'Retrying failed items...', 'geodir-converter' ), 'info' );
+
+		wp_send_json_success(
+			array(
+				'message' => __( 'Retrying failed items.', 'geodir-converter' ),
+			)
+		);
 	}
 
 	/**

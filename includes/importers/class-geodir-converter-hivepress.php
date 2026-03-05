@@ -12,7 +12,7 @@ namespace GeoDir_Converter\Importers;
 use WP_Error;
 use GeoDir_Media;
 use GeoDir_Pricing_Package;
-use GeoDir_Converter\GeoDir_Converter_Utils;
+
 use GeoDir_Converter\Abstracts\GeoDir_Converter_Importer;
 
 defined( 'ABSPATH' ) || exit;
@@ -81,6 +81,13 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	private $batch_size = 50;
 
 	/**
+	 * Cached object taxonomies for the listing post type.
+	 *
+	 * @var array|null
+	 */
+	private $listing_taxonomies_cache = null;
+
+	/**
 	 * Initialize hooks.
 	 *
 	 * @since 2.2.0
@@ -88,21 +95,11 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	protected function init() {}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'HivePress', 'geodir-converter' );
@@ -111,7 +108,9 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings from your HivePress installation.', 'geodir-converter' );
@@ -120,7 +119,9 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The URL to the importer icon.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/hivepress.png';
@@ -129,7 +130,9 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_CATEGORIES;
@@ -137,6 +140,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		?>
@@ -152,10 +159,7 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -163,10 +167,12 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
 	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -194,7 +200,9 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get next task.
 	 *
-	 * @param array $task The current task.
+	 * @since 2.2.0
+	 *
+	 * @param array $task         The current task.
 	 * @param bool  $reset_offset Whether to reset the offset.
 	 *
 	 * @return array|false The next task or false if all tasks are completed.
@@ -227,6 +235,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		global $wpdb;
@@ -255,9 +267,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	 * Import categories from HivePress to GeoDirectory.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @return array|false Result of the import operation or false if complete.
 	 */
 	public function task_import_categories( $task ) {
 		global $wpdb;
@@ -266,10 +279,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 		$this->set_import_total();
 
 		// Log import started.
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 
 		if ( 0 === (int) wp_count_terms( self::TAX_LISTING_CATEGORY ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -286,14 +299,16 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $categories ) || is_wp_error( $categories ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $categories ) );
 			$this->log(
 				sprintf(
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					/* translators: %1$d: number imported, %2$d: number failed */
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -309,7 +324,8 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
-				esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				/* translators: %1$d: number imported, %2$d: number failed */
+				__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -321,6 +337,8 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 	/**
 	 * Get custom fields for HivePress listings.
+	 *
+	 * @since 2.2.0
 	 *
 	 * @return array The custom fields.
 	 */
@@ -434,7 +452,8 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 				'type'        => $field_type,
 				'field_key'   => $field_key,
 				'label'       => $label,
-				'description' => sprintf( __( 'Imported from %s', 'geodir-converter' ), $meta_key ),
+				/* translators: %s: meta key name */
+			'description' => sprintf( __( 'Imported from %s', 'geodir-converter' ), $meta_key ),
 				'icon'        => $this->get_icon_for_field( $field_key ),
 				'required'    => 0,
 			);
@@ -541,8 +560,11 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Detect field type from sample value.
 	 *
-	 * @param mixed $sample_value Sample value.
-	 * @return string Field type.
+	 * @since 2.2.0
+	 *
+	 * @param mixed $sample_value Sample value to analyze.
+	 *
+	 * @return string Field type identifier.
 	 */
 	private function detect_field_type( $sample_value ) {
 		if ( empty( $sample_value ) ) {
@@ -585,8 +607,11 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get appropriate icon for field based on field key.
 	 *
-	 * @param string $field_key Field key.
-	 * @return string Icon class.
+	 * @since 2.2.0
+	 *
+	 * @param string $field_key Field key to match against known icon mappings.
+	 *
+	 * @return string Font Awesome icon class.
 	 */
 	private function get_icon_for_field( $field_key ) {
 		$icon_map = array(
@@ -619,7 +644,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Map HivePress field type to GeoDirectory field type.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $hp_type HivePress field type.
+	 *
 	 * @return string|false GeoDirectory field type or false if not supported.
 	 */
 	private function map_field_type( $hp_type ) {
@@ -646,8 +674,11 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get database data type for field type.
 	 *
-	 * @param string $field_type Field type.
-	 * @return string Data type.
+	 * @since 2.2.0
+	 *
+	 * @param string $field_type GeoDirectory field type.
+	 *
+	 * @return string Database column data type.
 	 */
 	private function map_data_type( $field_type ) {
 		$type_map = array(
@@ -672,17 +703,20 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	 * Import fields from HivePress to GeoDirectory.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task Task details.
-	 * @return array Result of the import operation.
+	 *
+	 * @return array|false Result of the import operation or false if complete.
 	 */
 	public function task_import_fields( array $task ) {
-		$this->log( esc_html__( 'Importing custom fields...', 'geodir-converter' ) );
+		$this->log( __( 'Importing custom fields...', 'geodir-converter' ) );
 
 		$post_type   = $this->get_import_post_type();
 		$fields      = $this->get_custom_fields();
 		$package_ids = $this->get_package_ids( $post_type );
 
 		if ( empty( $fields ) ) {
+			/* translators: %s: post type name */
 			$this->log( sprintf( __( 'No custom fields found for post type: %s', 'geodir-converter' ), $post_type ), 'warning' );
 			return $this->next_task( $task );
 		}
@@ -694,7 +728,8 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 			if ( $this->should_skip_field( $gd_field['htmlvar_name'] ) ) {
 				++$skipped;
-				$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
+				/* translators: %s: field name */
+			$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
 				continue;
 			}
 
@@ -716,7 +751,8 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 			} else {
 				++$failed;
 				$error_msg = is_wp_error( $result ) ? $result->get_error_message() : __( 'Unknown error', 'geodir-converter' );
-				$this->log( sprintf( __( 'Failed to import custom field: %1$s - %2$s', 'geodir-converter' ), $field['label'], $error_msg ), 'error' );
+				/* translators: %1$s: field name, %2$s: error message */
+			$this->log( sprintf( __( 'Failed to import custom field: %1$s - %2$s', 'geodir-converter' ), $field['label'], $error_msg ), 'error' );
 			}
 		}
 
@@ -726,6 +762,7 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: skipped count, %4$d: failed count */
 				__( 'Listing fields import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -741,10 +778,13 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Prepare single field for GeoDirectory.
 	 *
-	 * @param array  $field HivePress field data.
-	 * @param string $post_type Post type.
-	 * @param array  $package_ids Package IDs.
-	 * @return array GeoDirectory field data.
+	 * @since 2.2.0
+	 *
+	 * @param array  $field       HivePress field data.
+	 * @param string $post_type   GeoDirectory post type.
+	 * @param array  $package_ids Package IDs to assign the field to.
+	 *
+	 * @return array GeoDirectory field data ready for saving.
 	 */
 	private function prepare_single_field( $field, $post_type, $package_ids = array() ) {
 		$field_type = isset( $field['type'] ) ? $field['type'] : 'text';
@@ -781,8 +821,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	 * Parse and batch listings for background import.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task The task to import.
-	 * @return array Result of the import operation.
+	 *
+	 * @return array|false Result of the import operation or false if complete.
 	 */
 	public function task_parse_listings( array $task ) {
 		global $wpdb;
@@ -805,7 +847,7 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 			return $this->next_task( $task, true );
 		}
 
-		wp_suspend_cache_addition( false );
+		wp_suspend_cache_addition( true );
 
 		$listings = $wpdb->get_results(
 			$wpdb->prepare(
@@ -852,8 +894,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	 * Import a batch of listings (called by background process).
 	 *
 	 * @since 2.2.0
-	 * @param array $task The task to import.
-	 * @return bool Result of the import operation.
+	 *
+	 * @param array $task The task containing listings to import.
+	 *
+	 * @return bool Always returns false to indicate task completion.
 	 */
 	public function task_import_listings( $task ) {
 		$listings = isset( $task['listings'] ) && ! empty( $task['listings'] ) ? (array) $task['listings'] : array();
@@ -862,28 +906,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 			$title  = $listing->post_title;
 			$status = $this->import_single_listing( $listing );
 
-			switch ( $status ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					if ( self::IMPORT_STATUS_SUCCESS === $status ) {
-						$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'listing', $title ), 'success' );
-					} else {
-						$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'listing', $title ), 'warning' );
-					}
-
-					$this->increase_succeed_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_FAILED:
-				default:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
-			}
+			$this->process_import_result( $status, 'listing', $title, $listing->ID );
 		}
+
+		$this->flush_failed_items();
 
 		return false;
 	}
@@ -896,7 +922,12 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	 * @return int Import status.
 	 */
 	private function import_single_listing( $listing ) {
-		$post             = get_post( $listing->ID );
+		$post = get_post( $listing->ID );
+
+		if ( ! $post ) {
+			return self::IMPORT_STATUS_FAILED;
+		}
+
 		$post_type        = $this->get_import_post_type();
 		$gd_post_id       = ! $this->is_test_mode() ? $this->get_gd_listing_id( $post->ID, $this->importer_id . '_id', $post_type ) : false;
 		$is_update        = ! empty( $gd_post_id );
@@ -915,18 +946,9 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 		$longitude       = isset( $post_meta['hp_longitude'] ) && ! empty( $post_meta['hp_longitude'] ) ? $post_meta['hp_longitude'] : $location['longitude'];
 		$address         = isset( $post_meta['hp_address'] ) && ! empty( $post_meta['hp_address'] ) ? $post_meta['hp_address'] : '';
 
-		if ( $has_coordinates ) {
-			$this->log( 'Pulling listing address from coordinates: ' . $latitude . ', ' . $longitude, 'info' );
-
-			$location_lookup = GeoDir_Converter_Utils::get_location_from_coords( $latitude, $longitude );
-
-			if ( ! is_wp_error( $location_lookup ) ) {
-				$location = array_merge( $location, $location_lookup );
-			} else {
-				$location['latitude']  = $latitude;
-				$location['longitude'] = $longitude;
-			}
-		}
+		$location['latitude']  = $latitude;
+		$location['longitude'] = $longitude;
+		$location = $this->geocode_location( $latitude, $longitude, $location, $post->ID );
 
 		// Prepare the listing data.
 		$listing_data = array(
@@ -1118,9 +1140,12 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Process HivePress custom attributes.
 	 *
-	 * @param object $post Post object.
-	 * @param array  $post_meta Post meta data.
-	 * @return array Processed custom fields.
+	 * @since 2.2.0
+	 *
+	 * @param object $post      The WordPress post object.
+	 * @param array  $post_meta Post meta data keyed by meta key.
+	 *
+	 * @return array Processed custom fields keyed by field name.
 	 */
 	private function process_custom_attributes( $post, $post_meta ) {
 		$fields = array();
@@ -1178,8 +1203,11 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 			}
 		}
 
-		// Also check for taxonomy-based attributes.
-		$all_taxonomies = get_object_taxonomies( self::POST_TYPE_LISTING );
+		// Also check for taxonomy-based attributes (cached to avoid repeated lookups).
+		if ( null === $this->listing_taxonomies_cache ) {
+			$this->listing_taxonomies_cache = get_object_taxonomies( self::POST_TYPE_LISTING );
+		}
+		$all_taxonomies = $this->listing_taxonomies_cache;
 		foreach ( $all_taxonomies as $taxonomy ) {
 			// Only process hp_listing_* taxonomies.
 			if ( strpos( $taxonomy, 'hp_listing_' ) !== 0 ) {
@@ -1206,7 +1234,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get post images.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int $post_id The post ID.
+	 *
 	 * @return string Formatted gallery images string for GeoDirectory.
 	 */
 	private function get_post_images( $post_id ) {
@@ -1246,8 +1277,11 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get the featured image URL.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int $post_id The post ID.
-	 * @return string The featured image URL.
+	 *
+	 * @return string The featured image URL or empty string if not found.
 	 */
 	private function get_featured_image( $post_id ) {
 		$image = wp_get_attachment_image_src( get_post_thumbnail_id( $post_id ), 'full' );
@@ -1257,9 +1291,12 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	/**
 	 * Get listings terms (categories).
 	 *
-	 * @param int    $post_id The post ID.
-	 * @param string $taxonomy The taxonomy to get terms from.
+	 * @since 2.2.0
+	 *
+	 * @param int    $post_id     The post ID.
+	 * @param string $taxonomy    The taxonomy to get terms from.
 	 * @param string $return_type Return 'ids' or 'names'.
+	 *
 	 * @return array Array of term IDs or names.
 	 */
 	private function get_listings_terms( $post_id, $taxonomy = self::TAX_LISTING_CATEGORY, $return_type = 'ids' ) {
@@ -1278,17 +1315,38 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 			)
 		);
 
-		$categories = array();
-
+		// Collect all GD term IDs that need validation.
+		$candidate_ids = array();
 		foreach ( $terms as $term ) {
 			$gd_term_id = (int) $term->gd_equivalent;
-
 			if ( $gd_term_id ) {
-				$gd_term = $wpdb->get_row( $wpdb->prepare( "SELECT name, term_id FROM {$wpdb->terms} WHERE term_id = %d", $gd_term_id ) );
+				$candidate_ids[ $gd_term_id ] = $gd_term_id;
+			}
+		}
 
-				if ( $gd_term ) {
-					$categories[] = ( 'names' === $return_type ) ? $gd_term->name : $gd_term->term_id;
-				}
+		if ( empty( $candidate_ids ) ) {
+			return array();
+		}
+
+		// Batch validate all GD term IDs in a single query.
+		$placeholders = implode( ',', array_fill( 0, count( $candidate_ids ), '%d' ) );
+		$valid_terms  = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT term_id, name FROM {$wpdb->terms} WHERE term_id IN ({$placeholders})",
+				array_values( $candidate_ids )
+			)
+		);
+
+		$valid_map  = array();
+		foreach ( $valid_terms as $vt ) {
+			$valid_map[ (int) $vt->term_id ] = $vt->name;
+		}
+
+		$categories = array();
+		foreach ( $terms as $term ) {
+			$gd_term_id = (int) $term->gd_equivalent;
+			if ( $gd_term_id && isset( $valid_map[ $gd_term_id ] ) ) {
+				$categories[] = ( 'names' === $return_type ) ? $valid_map[ $gd_term_id ] : $gd_term_id;
 			}
 		}
 
@@ -1297,6 +1355,8 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 	/**
 	 * Count the number of listings.
+	 *
+	 * @since 2.2.0
 	 *
 	 * @return int The number of listings.
 	 */
@@ -1317,6 +1377,8 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 	/**
 	 * Count the number of HivePress packages.
+	 *
+	 * @since 2.2.0
 	 *
 	 * @return int The number of packages.
 	 */
@@ -1339,8 +1401,10 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 	 * Import packages from HivePress to GeoDirectory.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task Task details.
-	 * @return array Result of the import operation.
+	 *
+	 * @return array|false Result of the import operation or false if complete.
 	 */
 	public function task_import_packages( array $task ) {
 		global $wpdb;
@@ -1434,7 +1498,8 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 			$gd_package_id = GeoDir_Pricing_Package::insert_package( $package_data );
 
 			if ( ! $gd_package_id || is_wp_error( $gd_package_id ) ) {
-				$this->log( sprintf( __( 'Failed to import package: %s', 'geodir-converter' ), $package->post_title ), 'error' );
+				/* translators: %s: package title */
+			$this->log( sprintf( __( 'Failed to import package: %s', 'geodir-converter' ), $package->post_title ), 'error' );
 				++$failed;
 			} else {
 				$is_update = ! empty( $existing_package );
@@ -1457,6 +1522,7 @@ class GeoDir_Converter_HivePress extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: failed count */
 				__( 'Packages: %1$d imported, %2$d updated, %3$d failed', 'geodir-converter' ),
 				$imported,
 				$updated,

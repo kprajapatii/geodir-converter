@@ -42,6 +42,8 @@ class Geodir_Converter_Autoloader {
 	/**
 	 * Constructor.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $namespace_prefix The namespace prefix for autoloading.
 	 * @param string $base_dir         The base directory for autoloading.
 	 */
@@ -55,6 +57,8 @@ class Geodir_Converter_Autoloader {
 	/**
 	 * Register the autoloader.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @return void
 	 */
 	public function register() {
@@ -64,7 +68,9 @@ class Geodir_Converter_Autoloader {
 	/**
 	 * Add a PSR-4 mapping.
 	 *
-	 * @param string $prefix  The namespace prefix.
+	 * @since 2.0.2
+	 *
+	 * @param string $prefix   The namespace prefix.
 	 * @param string $base_dir The base directory for the namespace prefix.
 	 * @return void
 	 */
@@ -77,6 +83,8 @@ class Geodir_Converter_Autoloader {
 
 	/**
 	 * Autoload function for class loading.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $class Full class name.
 	 * @return void
@@ -98,6 +106,8 @@ class Geodir_Converter_Autoloader {
 
 	/**
 	 * Load the mapped file for a namespace prefix and relative class.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $relative_class The relative class name.
 	 * @return string|false The mapped file name on success, or false on failure.
@@ -122,6 +132,8 @@ class Geodir_Converter_Autoloader {
 	/**
 	 * Build the file path for a given class.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $relative_class The relative class name.
 	 * @param string $prefix         The namespace prefix.
 	 * @param string $base_dir       The base directory for the files.
@@ -142,6 +154,8 @@ class Geodir_Converter_Autoloader {
 
 	/**
 	 * If a file exists, require it from the file system.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $file The file to require.
 	 * @return bool True if the file exists, false if not.

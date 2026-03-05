@@ -8,6 +8,27 @@
     'use strict';
 
     /**
+     * Import button state: idle (not importing).
+     *
+     * @type {string}
+     */
+    var STATE_IDLE = 'idle';
+
+    /**
+     * Import button state: import in progress.
+     *
+     * @type {string}
+     */
+    var STATE_IMPORTING = 'importing';
+
+    /**
+     * Import button state: import paused.
+     *
+     * @type {string}
+     */
+    var STATE_PAUSED = 'paused';
+
+    /**
      * Performs AJAX request.
      *
      * @param {string} action - Action to perform.
@@ -59,6 +80,7 @@
         actionText: '',
         ajaxAction: '',
         converter: null,
+        iconHtml: '',
 
         /**
          * Initializes the button.
@@ -74,9 +96,26 @@
             this.ajaxAction = args.ajaxAction;
             this.converter = args.converter;
 
+            // Preserve any icon element inside the button.
+            var iconEl = this.element.find('i').first();
+            this.iconHtml = iconEl.length ? iconEl.prop('outerHTML') : '';
+
             this.element.on('click', this.click.bind(this));
 
             return this;
+        },
+
+        /**
+         * Sets the button text while preserving the icon.
+         *
+         * @param {string} text - The text to set.
+         */
+        _setText: function (text) {
+            if (this.iconHtml) {
+                this.element.html(this.iconHtml + text);
+            } else {
+                this.element.text(text);
+            }
         },
 
         /**
@@ -102,7 +141,7 @@
         activate: function () {
             this.inSuspended = true;
             this.element.prop('disabled', true);
-            this.element.text(this.actionText);
+            this._setText(this.actionText);
         },
 
         /**
@@ -111,7 +150,7 @@
         enable: function () {
             this.inSuspended = false;
             this.element.prop('disabled', false);
-            this.element.text(this.defaultText);
+            this._setText(this.defaultText);
         },
 
         /**
@@ -120,7 +159,7 @@
         disable: function () {
             this.inSuspended = false;
             this.element.prop('disabled', true);
-            this.element.text(this.defaultText);
+            this._setText(this.defaultText);
         },
 
         /**
@@ -147,7 +186,82 @@
      * @type {Object}
      */
     GeoDir_Converter.ImportButton = $.extend({}, GeoDir_Converter.ControlButton, {
+        state: STATE_IDLE,
+
+        /**
+         * Sets the button icon class.
+         *
+         * @param {string} iconClass - The Font Awesome icon class to set.
+         */
+        _setIcon: function (iconClass) {
+            var iconEl = this.element.find('i').first();
+            if (iconEl.length) {
+                iconEl.attr('class', iconClass + ' me-1');
+                this.iconHtml = iconEl.prop('outerHTML');
+            }
+        },
+
+        /**
+         * Sets the button to idle state.
+         */
+        setIdle: function () {
+            this.state = STATE_IDLE;
+            this.inSuspended = false;
+            this.element
+                .removeClass('btn-warning btn-success')
+                .addClass('btn-primary')
+                .prop('disabled', false);
+            this._setIcon('fas fa-play');
+            this._setText(this.defaultText);
+        },
+
+        /**
+         * Sets the button to importing state.
+         */
+        setImporting: function () {
+            this.state = STATE_IMPORTING;
+            this.inSuspended = false;
+            this.element
+                .removeClass('btn-primary btn-success')
+                .addClass('btn-warning')
+                .prop('disabled', false);
+            this._setIcon('fas fa-pause');
+            this._setText(this.pauseText);
+        },
+
+        /**
+         * Sets the button to paused state.
+         */
+        setPaused: function () {
+            this.state = STATE_PAUSED;
+            this.inSuspended = false;
+            this.element
+                .removeClass('btn-primary btn-warning')
+                .addClass('btn-success')
+                .prop('disabled', false);
+            this._setIcon('fas fa-play');
+            this._setText(this.resumeText);
+        },
+
+        /**
+         * Performs the appropriate action based on the current state.
+         */
         doAction: function () {
+            if (this.state === STATE_IDLE) {
+                this._doStartImport();
+            } else if (this.state === STATE_IMPORTING) {
+                this._doPause();
+            } else if (this.state === STATE_PAUSED) {
+                this._doResume();
+            }
+        },
+
+        /**
+         * Starts the import process by collecting form data and sending an AJAX request.
+         *
+         * @private
+         */
+        _doStartImport: function () {
             const self = this;
             const importerId = this.converter.importerId;
             const errorHandler = this.converter.errorHandler;
@@ -176,7 +290,7 @@
 
             GeoDir_Converter.ajax(self.ajaxAction, function (success, data) {
                 if (!success) {
-                    self.enable();
+                    self.setIdle();
                     self.converter.stop();
                     errorHandler.show(data.message);
                 } else {
@@ -187,6 +301,55 @@
                 contentType: false,
                 processData: false,
             });
+        },
+
+        /**
+         * Sends a pause request to the server.
+         *
+         * @private
+         */
+        _doPause: function () {
+            const self = this;
+            const importerId = this.converter.importerId;
+
+            this.inSuspended = true;
+            this.element.prop('disabled', true);
+            this._setIcon('fas fa-spinner fa-spin');
+            this._setText(this.pausingText);
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.pause, function (success, data) {
+                if (success) {
+                    self.setPaused();
+                    self.converter.markPaused();
+                } else {
+                    self.setImporting();
+                }
+            }, { importerId: importerId }, { method: 'POST' });
+        },
+
+        /**
+         * Sends a resume request to the server.
+         *
+         * @private
+         */
+        _doResume: function () {
+            const self = this;
+            const importerId = this.converter.importerId;
+
+            this.inSuspended = true;
+            this.element.prop('disabled', true);
+            this._setIcon('fas fa-spinner fa-spin');
+            this._setText(this.resumingText);
+
+            GeoDir_Converter.ajax(GeoDir_Converter.actions.resume, function (success, data) {
+                if (success) {
+                    self.setImporting();
+                    self.converter.markInProgress();
+                    self.converter.resumePolling();
+                } else {
+                    self.setPaused();
+                }
+            }, { importerId: importerId }, { method: 'POST' });
         }
     });
 
@@ -196,18 +359,36 @@
      * @type {Object}
      */
     GeoDir_Converter.ConfigureButton = $.extend({}, GeoDir_Converter.ControlButton, {
+        /**
+         * Activates the configure button with success styling.
+         */
         activate: function () {
             this.element
                 .addClass('btn-translucent-success')
-                .removeClass('btn-outline-primary')
+                .removeClass('btn-outline-primary btn-translucent-warning')
                 .text(this.actionText);
         },
+        /**
+         * Marks the configure button as paused with warning styling.
+         */
+        markPausedState: function () {
+            this.element
+                .addClass('btn-translucent-warning')
+                .removeClass('btn-outline-primary btn-translucent-success')
+                .text(this.pausedText || this.actionText);
+        },
+        /**
+         * Enables the configure button with default styling.
+         */
         enable: function () {
             this.element
                 .addClass('btn-outline-primary')
-                .removeClass('btn-translucent-success')
+                .removeClass('btn-translucent-success btn-translucent-warning')
                 .text(this.defaultText);
         },
+        /**
+         * Opens the importer settings panel.
+         */
         doAction: function () {
             const wrapper = $('.geodir-converter-wrapper');
             const converter = this.converter.element;
@@ -237,6 +418,9 @@
      * @type {Object}
      */
     GeoDir_Converter.BackButton = $.extend({}, GeoDir_Converter.ControlButton, {
+        /**
+         * Navigates back to the importer list view.
+         */
         doAction: function () {
             const wrapper = $('.geodir-converter-wrapper');
             const converter = this.converter.element;
@@ -264,6 +448,9 @@
     * @type {Object}
     */
     GeoDir_Converter.AbortButton = $.extend({}, GeoDir_Converter.ControlButton, {
+        /**
+         * Sends an abort request to cancel the running import.
+         */
         doAction: function () {
             this.activate();
             this.converter.stop();
@@ -274,6 +461,33 @@
                 self.converter.start();
                 if (!success) {
                     self.enable();
+                }
+            }, { importerId }, { method: 'POST' });
+        }
+    });
+
+    /**
+     * Retry Failed Button Control.
+     *
+     * @type {Object}
+     */
+    GeoDir_Converter.RetryFailedButton = $.extend({}, GeoDir_Converter.ControlButton, {
+        /**
+         * Sends a retry request to re-import failed items.
+         */
+        doAction: function () {
+            this.activate();
+            const importerId = this.converter.importerId;
+            const self = this;
+
+            GeoDir_Converter.ajax(self.ajaxAction, function (success, data) {
+                if (success) {
+                    self.converter.start();
+                } else {
+                    self.enable();
+                    if (data && data.message) {
+                        self.converter.errorHandler.show(data.message);
+                    }
                 }
             }, { importerId }, { method: 'POST' });
         }
@@ -435,6 +649,9 @@
      */
     GeoDir_Converter.ProgressBar = $.extend({}, {
         barEl: null,
+        elapsedEl: null,
+        elapsedValueEl: null,
+        statsEl: null,
 
         /**
          * Initializes the progress bar.
@@ -445,6 +662,9 @@
         init: function (el) {
             this.element = el;
             this.barEl = this.element.find('.progress-bar');
+            this.elapsedEl = this.element.find('.geodir-converter-elapsed-time');
+            this.elapsedValueEl = this.element.find('.geodir-converter-elapsed-value');
+            this.statsEl = this.element.find('.geodir-converter-stats-summary');
             return this;
         },
 
@@ -456,6 +676,72 @@
         updateProgress: function (newProgress) {
             this.element.removeClass('d-none');
             this.barEl.css('width', newProgress + '%').text(newProgress + '%');
+        },
+
+        /**
+         * Formats seconds into HH:MM:SS.
+         *
+         * @param {number} totalSeconds - Total elapsed seconds.
+         * @return {string} Formatted time string.
+         */
+        formatTime: function (totalSeconds) {
+            var hours = Math.floor(totalSeconds / 3600);
+            var minutes = Math.floor((totalSeconds % 3600) / 60);
+            var seconds = totalSeconds % 60;
+            return (hours < 10 ? '0' : '') + hours + ':' +
+                (minutes < 10 ? '0' : '') + minutes + ':' +
+                (seconds < 10 ? '0' : '') + seconds;
+        },
+
+        /**
+         * Updates the elapsed time display.
+         *
+         * @param {number} elapsed - Elapsed time in seconds.
+         */
+        updateElapsed: function (elapsed) {
+            if (elapsed > 0 && this.elapsedEl && this.elapsedEl.length) {
+                this.elapsedEl.removeClass('d-none');
+                this.elapsedValueEl.text(this.formatTime(elapsed));
+            }
+        },
+
+        /**
+         * Updates the stats counters.
+         *
+         * @param {Object} stats - Stats object with total, succeed, skipped, failed.
+         */
+        updateStats: function (stats) {
+            if (!stats || !this.statsEl || !this.statsEl.length) {
+                return;
+            }
+
+            var fields = ['succeed', 'skipped', 'failed', 'total'];
+            for (var i = 0; i < fields.length; i++) {
+                var field = fields[i];
+                var val = stats[field] || 0;
+                var wrapper = this.statsEl.find('> .geodir-converter-stat-' + field);
+                var countEl = wrapper.find('.geodir-converter-stat-' + field + '-count');
+
+                if (val > 0) {
+                    wrapper.removeClass('d-none');
+                    countEl.text(val);
+                } else {
+                    wrapper.addClass('d-none');
+                }
+            }
+        },
+
+        /**
+         * Resets the stats display.
+         */
+        resetStats: function () {
+            if (this.statsEl && this.statsEl.length) {
+                this.statsEl.find('> span').addClass('d-none');
+                this.statsEl.find('strong').text('0');
+            }
+            if (this.elapsedEl && this.elapsedEl.length) {
+                this.elapsedEl.addClass('d-none');
+            }
         }
     });
 
@@ -473,6 +759,9 @@
         /**
          * Initializes the drop zone.
          *
+         * @param {jQuery} el - Drop zone wrapper element.
+         * @param {Object} args - Arguments including the converter instance.
+         * @return {Object} The drop zone instance.
          */
         init: function (el, args) {
             this.element = el;
@@ -751,9 +1040,9 @@
         },
 
         /**
-         * Disables/enables step 2 inputs.
+         * Disables or enables step 2 form inputs.
          *
-         * @param {boolean} disabled
+         * @param {boolean} disabled - Whether to disable the inputs.
          */
         disableStep2Inputs: function (disabled) {
             const configureWrapper = this.element.find('.geodir-converter-configure-wrapper');
@@ -764,10 +1053,11 @@
 
 
         /**
-         * Renders an upload item.
-         * 
-         * @param {string} id
-         * @param {string} name
+         * Renders an upload item in the uploads list.
+         *
+         * @param {string} id - Unique identifier for the upload item.
+         * @param {string} name - The file name to display.
+         * @return {jQuery} The rendered upload item element.
          */
         renderUploadItem: function (id, name) {
             const item = $(`
@@ -842,6 +1132,7 @@
                 actionText: GeoDir_Converter.i18n.importing,
                 converter: this
             });
+            this.configureButton.pausedText = GeoDir_Converter.i18n.paused;
 
             let backButton = $.extend({}, GeoDir_Converter.BackButton);
             this.backButton = backButton.init(this.element.find('.geodir-converter-back'), {
@@ -855,12 +1146,24 @@
                 ajaxAction: GeoDir_Converter.actions.import,
                 converter: this
             });
+            this.importButton.pauseText = GeoDir_Converter.i18n.pause;
+            this.importButton.pausingText = GeoDir_Converter.i18n.pausing;
+            this.importButton.resumeText = GeoDir_Converter.i18n.resume;
+            this.importButton.resumingText = GeoDir_Converter.i18n.resuming;
 
             let abortButton = $.extend({}, GeoDir_Converter.AbortButton);
             this.abortButton = abortButton.init(this.element.find('.geodir-converter-abort'), {
                 defaultText: GeoDir_Converter.i18n.abort,
                 actionText: GeoDir_Converter.i18n.aborting,
                 ajaxAction: GeoDir_Converter.actions.abort,
+                converter: this
+            });
+
+            let retryFailedButton = $.extend({}, GeoDir_Converter.RetryFailedButton);
+            this.retryFailedButton = retryFailedButton.init(this.element.find('.geodir-converter-retry-failed'), {
+                defaultText: GeoDir_Converter.i18n.retryFailed,
+                actionText: GeoDir_Converter.i18n.retrying,
+                ajaxAction: GeoDir_Converter.actions.retry_failed,
                 converter: this
             });
 
@@ -876,6 +1179,9 @@
                     converter: this
                 });
             }
+
+            this.miniProgress = this.element.find('.geodir-converter-mini-progress');
+            this.miniProgressBar = this.miniProgress.find('.progress-bar');
 
             if (this.inProgress) {
                 this.start();
@@ -928,7 +1234,8 @@
         _initializeMappingStepButtons: function (container) {
             const importBtn = container.find('.geodir-converter-import');
             const abortBtn = container.find('.geodir-converter-abort');
-            
+            const retryBtn = container.find('.geodir-converter-retry-failed');
+
             if (typeof aui_init_select2 === 'function') {
                 aui_init_select2();
             }
@@ -941,6 +1248,10 @@
                     ajaxAction: GeoDir_Converter.actions.import,
                     converter: this
                 });
+                this.importButton.pauseText = GeoDir_Converter.i18n.pause;
+                this.importButton.pausingText = GeoDir_Converter.i18n.pausing;
+                this.importButton.resumeText = GeoDir_Converter.i18n.resume;
+                this.importButton.resumingText = GeoDir_Converter.i18n.resuming;
             }
 
             if (abortBtn.length) {
@@ -952,6 +1263,16 @@
                     converter: this
                 });
             }
+
+            if (retryBtn.length) {
+                const retryFailedButton = $.extend({}, GeoDir_Converter.RetryFailedButton);
+                this.retryFailedButton = retryFailedButton.init(retryBtn, {
+                    defaultText: GeoDir_Converter.i18n.retryFailed,
+                    actionText: GeoDir_Converter.i18n.retrying,
+                    ajaxAction: GeoDir_Converter.actions.retry_failed,
+                    converter: this
+                });
+            }
         },
 
         /**
@@ -960,6 +1281,15 @@
         start: function () {
             this.preventUpdates = false;
             this.logsHandler.clear();
+            this.progressBar.resetStats();
+            this.updateTimeout = setTimeout(this.tick.bind(this), this.shortTickInterval);
+        },
+
+        /**
+         * Resumes polling without resetting logs/stats.
+         */
+        resumePolling: function () {
+            this.preventUpdates = false;
             this.updateTimeout = setTimeout(this.tick.bind(this), this.shortTickInterval);
         },
 
@@ -995,28 +1325,54 @@
                         self.updateTimeout = setTimeout(self.tick.bind(self), self.tickInterval);
                     } else {
                         self.abortButton.disable();
+                        self.importButton.element.prop('disabled', true);
                     }
                     return;
                 }
 
                 self.resetRetries();
 
-                data.inProgress ? self.markInProgress() : self.markStopped();
-                data.inProgress ? self.configureButton.activate() : self.configureButton.enable();
-
                 self.progressBar.updateProgress(data.progress);
+                self.progressBar.updateStats(data.stats);
+                self.progressBar.updateElapsed(data.elapsed);
                 self.logsHandler.setShown(data.logsShown);
                 self.logsHandler.insertLogs(data.logs);
 
-                if (self.dropZone && self.dropZone.btn) {
-                    self.dropZone.btn.prop('disabled', data.inProgress);
+                // Update mini progress bar.
+                self.updateMiniProgress(data.progress, data.stats);
+
+                if (data.isPaused) {
+                    self.markPaused();
+                    self.configureButton.markPausedState();
+                    self.progressBar.barEl.removeClass('progress-bar-animated');
+                    self.miniProgressBar.removeClass('progress-bar-animated');
+                } else if (data.inProgress) {
+                    self.markInProgress();
+                    self.configureButton.activate();
+                    self.progressBar.barEl.addClass('progress-bar-animated');
+                    self.miniProgressBar.addClass('progress-bar-animated');
+                } else {
+                    self.markStopped();
+                    self.configureButton.enable();
+                    self.progressBar.barEl.removeClass('progress-bar-animated progress-bar-striped');
+                    self.miniProgress.addClass('d-none');
                 }
 
-                if (self.inProgress) {
-                    self.updateTimeout = setTimeout(self.tick.bind(self), self.tickInterval);
+                // Show retry button when complete with failures.
+                if (!data.inProgress && !data.isPaused && data.failedItemsCount > 0) {
+                    self.retryFailedButton.element.removeClass('d-none');
+                    self.retryFailedButton.enable();
                 } else {
-                    self.abortButton.disable();
-                    self.importButton.enable();
+                    self.retryFailedButton.element.addClass('d-none');
+                }
+
+                if (self.dropZone && self.dropZone.btn) {
+                    self.dropZone.btn.prop('disabled', data.inProgress || data.isPaused);
+                }
+
+                // Continue polling while in progress or paused.
+                if (data.inProgress || data.isPaused) {
+                    self.updateTimeout = setTimeout(self.tick.bind(self), self.tickInterval);
                 }
 
             }, { logsShown: self.logsHandler.shown, importerId: this.importerId });
@@ -1027,8 +1383,20 @@
          */
         markInProgress: function () {
             this.inProgress = true;
-            this.importButton.activate();
+            this.importButton.setImporting();
             this.abortButton.enable();
+            this.retryFailedButton.element.addClass('d-none');
+            this.miniProgress.removeClass('d-none');
+        },
+
+        /**
+         * Marks the converter as paused.
+         */
+        markPaused: function () {
+            this.inProgress = true;
+            this.importButton.setPaused();
+            this.abortButton.enable();
+            this.retryFailedButton.element.addClass('d-none');
         },
 
         /**
@@ -1036,8 +1404,35 @@
          */
         markStopped: function () {
             this.inProgress = false;
-            this.importButton.enable();
+            this.importButton.setIdle();
             this.abortButton.disable();
+        },
+
+        /**
+         * Updates the mini progress bar in the list view.
+         *
+         * @param {number} percent - Progress percentage.
+         * @param {Object} stats - Import statistics.
+         */
+        updateMiniProgress: function (percent, stats) {
+            this.miniProgress.removeClass('d-none');
+            this.miniProgressBar.css('width', percent + '%');
+
+            var infoEl = this.miniProgress.find('.geodir-converter-mini-info');
+            if (stats && stats.total > 0) {
+                var processed = (stats.succeed || 0) + (stats.skipped || 0) + (stats.failed || 0);
+                if (!infoEl.length) {
+                    this.miniProgress.append(
+                        '<div class="d-flex justify-content-between mt-1 geodir-converter-mini-info" style="font-size: 11px;">' +
+                        '<span class="text-muted geodir-converter-mini-count"></span>' +
+                        '<span class="text-muted geodir-converter-mini-percent"></span>' +
+                        '</div>'
+                    );
+                    infoEl = this.miniProgress.find('.geodir-converter-mini-info');
+                }
+                infoEl.find('.geodir-converter-mini-count').text(processed + ' / ' + stats.total);
+                infoEl.find('.geodir-converter-mini-percent').text(percent + '%');
+            }
         }
     };
 
@@ -1047,6 +1442,9 @@
      * @type {Object}
      */
     GeoDir_Converter.CSVImporter = {
+        /**
+         * Initializes the CSV importer event handlers.
+         */
         init: function () {
             const self = this;
             const csvForm = $('.geodir-converter-csv-form');

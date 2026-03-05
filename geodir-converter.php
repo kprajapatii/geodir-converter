@@ -10,7 +10,7 @@
  * @wordpress-plugin
  * Plugin Name:       GeoDirectory Directory Converter
  * Plugin URI:        https://wpgeodirectory.com/downloads/directory-converter/
- * Description:       Convert directories like phpMyDirectory, Listify, vantage, Directorist, Business Directory Plugin and ListingPro to GeoDirectory.
+ * Description:       Convert directories like phpMyDirectory, Listify, Vantage, Directorist, Business Directory Plugin, ListingPro, MyListing, aDirectory and WP Residence to GeoDirectory.
  * Version:           2.1.5
  * Requires at least: 5.0
  * Requires PHP:      5.6
@@ -45,6 +45,8 @@ define( 'GEODIR_CONVERTER_PLUGIN_BASENAME', plugin_basename( __FILE__ ) );
 
 /**
  * Autoload classes.
+ *
+ * @since 2.0.2
  */
 require_once GEODIR_CONVERTER_PLUGIN_DIR . 'includes/class-geodir-converter-autoloader.php';
 $autoloader = new Geodir_Converter_Autoloader( GEODIR_CONVERTER_NAMESPACE, GEODIR_CONVERTER_PLUGIN_DIR );
@@ -52,6 +54,8 @@ $autoloader->register();
 
 /**
  * Display PHP version error.
+ *
+ * @since 2.0.2
  *
  * @return void
  */
@@ -68,6 +72,8 @@ function php_version_error() {
 
 /**
  * Display WordPress version error.
+ *
+ * @since 2.0.2
  *
  * @return void
  */
@@ -190,6 +196,8 @@ add_action( 'geodirectory_loaded', GEODIR_CONVERTER_NAMESPACE . '\initialize' );
  * The code that runs during plugin activation.
  *
  * @since 2.0.2
+ *
+ * @return void
  */
 function activate() {
 	// Set a transient showing the plugin has been activated. Used to redirect users to the plugin page.

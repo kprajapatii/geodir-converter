@@ -34,6 +34,11 @@ Currently supported directories:
 
 == Changelog ==
 
+= 2.1.6 - TBD =
+* Added support for importing listings from WP Residence theme - ADDED
+* Added support for importing listings from MyListing theme - ADDED
+* Added support for importing listings from aDirectory plugin - ADDED
+
 = 2.1.5 - 2026-02-19 =
 * Added CSV file importer with field mapping support - ADDED
 * Added support for importing listings from Connections directory plugin - ADDED

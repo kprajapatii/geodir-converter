@@ -12,6 +12,9 @@ plugins/
 # Node modules
 node_modules/
 
+# Sample data
+sample-data/
+
 # Temporary files
 *.tmp
 *.bak

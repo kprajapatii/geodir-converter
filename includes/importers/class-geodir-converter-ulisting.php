@@ -11,7 +11,7 @@ namespace GeoDir_Converter\Importers;
 use WP_Error;
 use GeoDir_Media;
 use GeoDir_Pricing_Package;
-use GeoDir_Converter\GeoDir_Converter_Utils;
+
 use GeoDir_Converter\Abstracts\GeoDir_Converter_Importer;
 
 defined( 'ABSPATH' ) || exit;
@@ -108,21 +108,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'uListing', 'geodir-converter' );
@@ -131,7 +121,9 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings from your uListing installation.', 'geodir-converter' );
@@ -140,7 +132,9 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The URL to the importer icon.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/ulisting.png';
@@ -149,7 +143,9 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_CATEGORIES;
@@ -157,6 +153,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		?>
@@ -173,10 +173,7 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 						
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -184,10 +181,12 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
 	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -221,7 +220,9 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get next task.
 	 *
-	 * @param array $task The current task.
+	 * @since 2.2.0
+	 *
+	 * @param array $task         The current task.
 	 * @param bool  $reset_offset Whether to reset the offset.
 	 *
 	 * @return array|false The next task or false if all tasks are completed.
@@ -254,6 +255,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		global $wpdb;
@@ -282,9 +287,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	 * Import categories from uListing to GeoDirectory.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_categories( array $task ) {
 		global $wpdb;
@@ -293,10 +299,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 		$this->set_import_total();
 
 		// Log import started.
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 
 		if ( 0 === (int) wp_count_terms( self::TAX_LISTING_CATEGORY ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -313,14 +319,16 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $categories ) || is_wp_error( $categories ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $categories ) );
 			$this->log(
 				sprintf(
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					/* translators: %1$d: number imported, %2$d: number failed */
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -344,7 +352,7 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: %1$d: number of imported categories, %2$d: number of failed categories */
-				esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				(int) $result['imported'],
 				(int) $result['failed']
 			),
@@ -358,18 +366,20 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	 * Import packages from uListing to GeoDirectory.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task Task details.
-	 * @return array Result of the import operation.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_packages( array $task ) {
 		global $wpdb;
 
 		if ( ! class_exists( 'GeoDir_Pricing_Package' ) ) {
-			$this->log( esc_html__( 'Packages: Pricing Manager not active. Skipping packages.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Packages: Pricing Manager not active. Skipping packages.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
-		$this->log( esc_html__( 'Packages: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Packages: Import started.', 'geodir-converter' ) );
 
 		$plans = $wpdb->get_results(
 			$wpdb->prepare(
@@ -383,7 +393,7 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $plans ) ) {
-			$this->log( esc_html__( 'Packages: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Packages: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -462,7 +472,8 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 			$package_id   = GeoDir_Pricing_Package::insert_package( $package_data );
 
 			if ( ! $package_id || is_wp_error( $package_id ) ) {
-				$this->log( sprintf( esc_html__( 'Packages: Failed to import %s.', 'geodir-converter' ), esc_html( $plan->post_title ) ), 'error' );
+				/* translators: %s: package title */
+			$this->log( sprintf( __( 'Packages: Failed to import %s.', 'geodir-converter' ), esc_html( $plan->post_title ) ), 'error' );
 				++$failed;
 				continue;
 			}
@@ -470,8 +481,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 			GeoDir_Pricing_Package::update_meta( $package_id, self::PACKAGE_META_KEY, $plan_id );
 
 			$log_message = $existing_package
-				? sprintf( esc_html__( 'Packages: Updated %s.', 'geodir-converter' ), esc_html( $plan->post_title ) )
-				: sprintf( esc_html__( 'Packages: Imported %s.', 'geodir-converter' ), esc_html( $plan->post_title ) );
+				/* translators: %s: package title */
+				? sprintf( __( 'Packages: Updated %s.', 'geodir-converter' ), esc_html( $plan->post_title ) )
+				/* translators: %s: package title */
+				: sprintf( __( 'Packages: Imported %s.', 'geodir-converter' ), esc_html( $plan->post_title ) );
 
 			$this->log( $log_message, 'info' );
 
@@ -488,7 +501,7 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: 1: imported packages count, 2: updated packages count, 3: failed packages count */
-				esc_html__( 'Packages: %1$d imported, %2$d updated, %3$d failed.', 'geodir-converter' ),
+				__( 'Packages: %1$d imported, %2$d updated, %3$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
 				$failed
@@ -501,6 +514,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 
 	/**
 	 * Display uListing listing type selector.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	private function display_listing_type_select() {
 		$selected_type = $this->get_selected_listing_type_id();
@@ -532,6 +549,7 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	 * Get custom fields from uListing attributes.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @return array Array of custom field definitions.
 	 */
 	private function get_custom_fields() {
@@ -662,7 +680,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get attribute options from taxonomy.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int $attribute_id Attribute ID.
+	 *
 	 * @return array Array of option strings.
 	 */
 	private function get_attribute_options( $attribute_id ) {
@@ -687,6 +708,8 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 
 	/**
 	 * Retrieve available uListing listing types.
+	 *
+	 * @since 2.2.0
 	 *
 	 * @return array Listing types keyed by ID.
 	 */
@@ -724,7 +747,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Map a uListing attribute name to a GeoDirectory address field.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $field_name Attribute name.
+	 *
 	 * @return string|false GeoDirectory field key or false if not an address field.
 	 */
 	private function map_to_address_field( $field_name ) {
@@ -762,8 +788,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Determine if a field should populate post content.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $field_name Field name.
-	 * @return bool
+	 *
+	 * @return bool Whether the field is a description field.
 	 */
 	private function is_description_field( $field_name ) {
 		$field_name_clean = $this->normalize_field_name( $field_name );
@@ -774,7 +803,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Normalize a field name for internal comparisons.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $field_name Field name.
+	 *
 	 * @return string Normalized field name.
 	 */
 	private function normalize_field_name( $field_name ) {
@@ -787,6 +819,8 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get the selected listing type ID from settings.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @return int Listing type ID or 0 for all types.
 	 */
 	private function get_selected_listing_type_id() {
@@ -798,8 +832,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Determine if a listing belongs to the selected listing type.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int $listing_id Listing ID.
-	 * @return bool
+	 *
+	 * @return bool Whether the listing matches the selected type.
 	 */
 	private function listing_matches_selected_type( $listing_id ) {
 		$listing_type_id = $this->get_selected_listing_type_id();
@@ -829,8 +866,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get uListing attribute details for a field name.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $field_name Field name.
-	 * @return object|null
+	 *
+	 * @return object|null The attribute object or null if not found.
 	 */
 	private function get_ulisting_attribute( $field_name ) {
 		$key = $this->normalize_field_name( $field_name );
@@ -841,8 +881,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Determine if the attribute type is choice-based.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $type Attribute type.
-	 * @return bool
+	 *
+	 * @return bool Whether the type is a choice-based attribute.
 	 */
 	private function is_choice_attribute_type( $type ) {
 		$choice_types = array( 'select', 'multiselect', 'checkbox', 'radio_button', 'yes_no' );
@@ -853,9 +896,12 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Convert choice-based attribute values to their option labels.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param object     $attribute Attribute details.
 	 * @param int|string $value     Raw value.
-	 * @return int|string|array
+	 *
+	 * @return int|string|array The converted value or original if not a choice type.
 	 */
 	private function maybe_convert_choice_value( $attribute, $value ) {
 		if ( empty( $attribute ) || empty( $attribute->type ) || ! $this->is_choice_attribute_type( $attribute->type ) ) {
@@ -876,9 +922,12 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Resolve the display label for an attribute option value.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int        $attribute_id Attribute ID.
 	 * @param int|string $value        Raw value stored by uListing.
-	 * @return string
+	 *
+	 * @return string The display label for the value.
 	 */
 	private function get_attribute_option_label( $attribute_id, $value ) {
 		$value = is_string( $value ) ? trim( $value ) : $value;
@@ -919,7 +968,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Map uListing field type to GeoDirectory field type.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $ulisting_type uListing field type.
+	 *
 	 * @return string|false GeoDirectory field type or false if not supported.
 	 */
 	private function map_field_type( $ulisting_type ) {
@@ -948,8 +1000,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get database data type for field type.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $field_type Field type.
-	 * @return string Data type.
+	 *
+	 * @return string The GeoDirectory data type.
 	 */
 	private function map_data_type( $field_type ) {
 		$type_map = array(
@@ -975,7 +1030,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Map uListing duration type to GeoDirectory time unit.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $duration_type Duration type string.
+	 *
 	 * @return string GeoDirectory time unit.
 	 */
 	private function map_duration_type_to_unit( $duration_type ) {
@@ -999,8 +1057,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get appropriate icon for field based on field key.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $field_key Field key.
-	 * @return string Icon class.
+	 *
+	 * @return string Icon CSS class.
 	 */
 	private function get_icon_for_field( $field_key ) {
 		$icon_map = array(
@@ -1034,8 +1095,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	 * Import fields from uListing to GeoDirectory.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task Task details.
-	 * @return array Result of the import operation.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_import_fields( array $task ) {
 		$listing_type_id   = $this->get_selected_listing_type_id();
@@ -1087,7 +1150,8 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 
 			if ( $this->should_skip_field( $gd_field['htmlvar_name'] ) ) {
 				++$skipped;
-				$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
+				/* translators: %s: field name */
+			$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
 				continue;
 			}
 
@@ -1117,7 +1181,8 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 			} else {
 				++$failed;
 				$error_msg = is_wp_error( $result ) ? $result->get_error_message() : __( 'Unknown error', 'geodir-converter' );
-				$this->log( sprintf( __( 'Failed to import custom field: %1$s - %2$s', 'geodir-converter' ), $field['label'], $error_msg ), 'error' );
+				/* translators: %1$s: field name, %2$s: error message */
+			$this->log( sprintf( __( 'Failed to import custom field: %1$s - %2$s', 'geodir-converter' ), $field['label'], $error_msg ), 'error' );
 			}
 		}
 
@@ -1127,6 +1192,7 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: skipped count, %4$d: failed count */
 				__( 'Listing fields import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -1142,9 +1208,12 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Prepare single field for GeoDirectory.
 	 *
-	 * @param array  $field uListing field data.
-	 * @param string $post_type Post type.
+	 * @since 2.2.0
+	 *
+	 * @param array  $field       uListing field data.
+	 * @param string $post_type   Post type.
 	 * @param array  $package_ids Package IDs.
+	 *
 	 * @return array GeoDirectory field data.
 	 */
 	private function prepare_single_field( $field, $post_type, $package_ids = array() ) {
@@ -1182,8 +1251,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	 * Parse and batch listings for background import.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task The task to import.
-	 * @return array Result of the import operation.
+	 *
+	 * @return array|false The next task or false if all tasks are completed.
 	 */
 	public function task_parse_listings( array $task ) {
 		global $wpdb;
@@ -1206,7 +1277,7 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 			return $this->next_task( $task, true );
 		}
 
-		wp_suspend_cache_addition( false );
+		wp_suspend_cache_addition( true );
 
 		$listing_type_id = $this->get_selected_listing_type_id();
 		$params          = array();
@@ -1256,8 +1327,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	 * Import a batch of listings (called by background process).
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param array $task The task to import.
-	 * @return bool Result of the import operation.
+	 *
+	 * @return false Always returns false to signal task completion.
 	 */
 	public function task_import_listings( $task ) {
 		$listings = isset( $task['listings'] ) && ! empty( $task['listings'] ) ? (array) $task['listings'] : array();
@@ -1266,28 +1339,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 			$title  = $listing->post_title;
 			$status = $this->import_single_listing( $listing );
 
-			switch ( $status ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					if ( self::IMPORT_STATUS_SUCCESS === $status ) {
-						$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'listing', $title ), 'success' );
-					} else {
-						$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'listing', $title ), 'warning' );
-					}
-
-					$this->increase_succeed_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_FAILED:
-				default:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
-			}
+			$this->process_import_result( $status, 'listing', $title, $listing->ID );
 		}
+
+		$this->flush_failed_items();
 
 		return false;
 	}
@@ -1296,11 +1351,18 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	 * Convert a single uListing listing to GeoDirectory format.
 	 *
 	 * @since 2.2.0
-	 * @param  object $listing The post object to convert.
-	 * @return int Import status.
+	 *
+	 * @param object $listing The post object to convert.
+	 *
+	 * @return int Import status constant.
 	 */
 	private function import_single_listing( $listing ) {
-		$post       = get_post( $listing->ID );
+		$post = get_post( $listing->ID );
+
+		if ( ! $post ) {
+			return self::IMPORT_STATUS_FAILED;
+		}
+
 		$post_type  = $this->get_import_post_type();
 		$gd_post_id = ! $this->is_test_mode() ? $this->get_gd_listing_id( $post->ID, $this->importer_id . '_id', $post_type ) : false;
 		$is_update  = ! empty( $gd_post_id );
@@ -1353,18 +1415,9 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 		$latitude        = isset( $field_values['latitude'] ) && ! empty( $field_values['latitude'] ) ? $field_values['latitude'] : $location['latitude'];
 		$longitude       = isset( $field_values['longitude'] ) && ! empty( $field_values['longitude'] ) ? $field_values['longitude'] : $location['longitude'];
 
-		// If we have coordinates, attempt to backfill missing address parts.
-		if ( $has_coordinates ) {
-			$this->log( 'Pulling listing address from coordinates: ' . $latitude . ', ' . $longitude, 'info' );
-			$location_lookup = GeoDir_Converter_Utils::get_location_from_coords( $latitude, $longitude );
-
-			if ( ! is_wp_error( $location_lookup ) ) {
-				$location = array_merge( $location, $location_lookup );
-			} else {
-				$location['latitude']  = $latitude;
-				$location['longitude'] = $longitude;
-			}
-		}
+		$location['latitude']  = $latitude;
+		$location['longitude'] = $longitude;
+		$location = $this->geocode_location( $latitude, $longitude, $location, $post->ID );
 
 		// Prepare the listing data.
 		$listing_data = array(
@@ -1481,8 +1534,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get field values from uListing attribute relationships.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int $post_id Post ID.
-	 * @return array Array of field values.
+	 *
+	 * @return array Array of field values keyed by attribute name.
 	 */
 	private function get_field_values( $post_id ) {
 		global $wpdb;
@@ -1548,8 +1604,11 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get listings terms (categories).
 	 *
-	 * @param int    $post_id The post ID.
+	 * @since 2.2.0
+	 *
+	 * @param int    $post_id  The post ID.
 	 * @param string $taxonomy The taxonomy to get terms from.
+	 *
 	 * @return array Array of term IDs.
 	 */
 	private function get_listings_terms( $post_id, $taxonomy ) {
@@ -1594,6 +1653,8 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Count the number of listings.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @return int The number of listings.
 	 */
 	private function count_listings() {
@@ -1623,6 +1684,8 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Count the number of uListing pricing plans.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @return int The number of packages.
 	 */
 	private function count_packages() {
@@ -1643,8 +1706,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Check if a GeoDirectory package already exists for the given uListing plan.
 	 *
-	 * @param string $post_type GeoDirectory post type.
-	 * @param int    $plan_id   uListing plan ID.
+	 * @since 2.2.0
+	 *
+	 * @param string $post_type     GeoDirectory post type.
+	 * @param int    $plan_id       uListing plan ID.
 	 * @param bool   $free_fallback Whether to fallback to an existing free package.
 	 *
 	 * @return object|null Existing package row or null.
@@ -1683,7 +1748,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get post images.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int $post_id The post ID.
+	 *
 	 * @return string Formatted gallery images string for GeoDirectory.
 	 */
 	private function get_post_images( $post_id ) {
@@ -1723,7 +1791,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	/**
 	 * Get the featured image URL.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param int $post_id The post ID.
+	 *
 	 * @return string The featured image URL.
 	 */
 	private function get_featured_image( $post_id ) {
@@ -1735,8 +1806,10 @@ class GeoDir_Converter_uListing extends GeoDir_Converter_Importer {
 	 * Import comments from uListing listing to GeoDirectory listing.
 	 *
 	 * @since 2.2.0
+	 *
 	 * @param int $ulisting_listing_id uListing listing ID.
-	 * @param int $gd_post_id GeoDirectory post ID.
+	 * @param int $gd_post_id          GeoDirectory post ID.
+	 *
 	 * @return void
 	 */
 	private function import_comments( $ulisting_listing_id, $gd_post_id ) {

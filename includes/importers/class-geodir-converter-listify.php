@@ -69,27 +69,19 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	/**
 	 * Initialize hooks.
 	 *
-	 * @since 1.0.0
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	protected function init() {
 	}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'Listify', 'geodir-converter' );
@@ -98,7 +90,9 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings from your Listify installation.', 'geodir-converter' );
@@ -107,7 +101,9 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The importer icon URL.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/listify.png';
@@ -116,7 +112,9 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.0.2
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_CATEGORIES;
@@ -124,6 +122,10 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		?>
@@ -139,10 +141,7 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 						
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -150,10 +149,11 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
-	 *
-	 * @return array Validated and sanitized settings.
+	 * @return array|WP_Error Validated and sanitized settings, or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -262,6 +262,10 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		global $wpdb;
@@ -293,11 +297,11 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	 */
 	public function task_import_categories( $task ) {
 		global $wpdb;
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 		$this->set_import_total();
 
 		if ( ! get_option( 'job_manager_enable_categories' ) || 0 === intval( wp_count_terms( self::TAX_LISTING_CATEGORY ) ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -314,15 +318,16 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $categories ) || is_wp_error( $categories ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $categories ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -339,7 +344,7 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: %1$d: number of imported terms, %2$d: number of failed imports */
-				esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -359,13 +364,13 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	public function task_import_fields( array $task ) {
 		global $plugin_prefix;
 
-		$this->log( esc_html__( 'Importing standard fields...', 'geodir-converter' ) );
+		$this->log( __( 'Importing standard fields...', 'geodir-converter' ) );
 
 		// Get WPJM fields.
 		$fields = $this->get_fields();
 
 		if ( empty( $fields ) ) {
-			$this->log( esc_html__( 'No custom fields found for import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'No custom fields found for import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -381,7 +386,8 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 			// Skip fields that shouldn't be imported.
 			if ( $this->should_skip_field( $gd_field['htmlvar_name'] ) ) {
 				++$skipped;
-				$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
+				/* translators: %s: field name */
+			$this->log( sprintf( __( 'Skipped custom field: %s', 'geodir-converter' ), $field['label'] ), 'warning' );
 				continue;
 			}
 
@@ -396,7 +402,8 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 				$column_exists ? ++$updated : ++$imported;
 			} else {
 				++$failed;
-				$this->log( sprintf( __( 'Failed to import custom field: %s', 'geodir-converter' ), $field['label'] ), 'error' );
+				/* translators: %s: field name */
+			$this->log( sprintf( __( 'Failed to import custom field: %s', 'geodir-converter' ), $field['label'] ), 'error' );
 			}
 		}
 
@@ -406,6 +413,7 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 
 		$this->log(
 			sprintf(
+				/* translators: %1$d: imported count, %2$d: updated count, %3$d: skipped count, %4$d: failed count */
 				__( 'Listing fields import completed: %1$d imported, %2$d updated, %3$d skipped, %4$d failed.', 'geodir-converter' ),
 				$imported,
 				$updated,
@@ -627,10 +635,6 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 		}
 
 		if ( ! get_option( 'job_manager_enable_remote_position' ) ) {
-			unset( $fields['job_salary_unit'] );
-		}
-
-		if ( ! get_option( 'job_manager_enable_remote_position' ) ) {
 			unset( $fields['remote_position'] );
 		}
 
@@ -753,7 +757,7 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 			return $this->next_task( $task, true );
 		}
 
-		wp_suspend_cache_addition( false );
+		wp_suspend_cache_addition( true );
 
 		$listings = $wpdb->get_results(
 			$wpdb->prepare(
@@ -812,29 +816,10 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 			$title  = $listing->post_title;
 			$result = $this->import_single_listing( $listing );
 
-			switch ( $result ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					if ( self::IMPORT_STATUS_SUCCESS === $result ) {
-						$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'listing', $title ), 'success' );
-						$this->increase_succeed_imports( 1 );
-					} else {
-						$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'listing', $title ), 'warning' );
-						$this->increase_succeed_imports( 1 );
-					}
-					break;
-
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-
-				case self::IMPORT_STATUS_FAILED:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
-			}
+			$this->process_import_result( $result, 'listing', $title, $listing->ID );
 		}
+
+		$this->flush_failed_items();
 
 		return false;
 	}
@@ -848,6 +833,11 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	 */
 	private function import_single_listing( $listing ) {
 		$post = get_post( $listing->ID );
+
+		if ( ! $post ) {
+			return self::IMPORT_STATUS_FAILED;
+		}
+
 		// Check if the post has already been imported.
 		$post_type  = $this->get_import_post_type();
 		$gd_post_id = ! $this->is_test_mode() ? $this->get_gd_listing_id( $post->ID, 'wpjm_id', $post_type ) : false;
@@ -1009,9 +999,11 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	/**
 	 * Process form fields and extract values from post meta.
 	 *
-	 * @param object $post The post object.
+	 * @since 2.0.2
+	 *
+	 * @param object $post      The post object.
 	 * @param array  $post_meta The post meta data.
-	 * @return array The processed fields.
+	 * @return array The processed fields keyed by GeoDirectory field name.
 	 */
 	private function process_form_fields( $post, $post_meta ) {
 		$form_fields = $this->get_fields();
@@ -1222,7 +1214,9 @@ class GeoDir_Converter_Listify extends GeoDir_Converter_Importer {
 	/**
 	 * Return an associative array containing the options for salary units, based on Google Structured Data documentation.
 	 *
-	 * @param boolean $include_empty Defines if we should include an empty option as default.
+	 * @since 2.0.2
+	 *
+	 * @param bool $include_empty Whether to include an empty option as default.
 	 * @return array Where the key is the identifier used by Google Structured Data, and the value is a translated label.
 	 */
 	private function get_salary_unit_options( $include_empty = true ) {

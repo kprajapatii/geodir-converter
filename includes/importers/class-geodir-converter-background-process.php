@@ -68,7 +68,9 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 	/**
 	 * Calculates time left for the background process.
 	 *
-	 * @return int
+	 * @since 2.0.2
+	 *
+	 * @return int Time remaining in seconds before the process should stop.
 	 */
 	protected function time_left() {
 		if ( $this->max_execution_time > 0 ) {
@@ -91,18 +93,89 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 	/**
 	 * Checks if the background process is aborting.
 	 *
-	 * @return bool
+	 * @since 2.0.2
+	 *
+	 * @return bool True if the process is aborting, false otherwise.
 	 */
 	public function is_aborting() {
 		return $this->importer->options_handler->get_option_no_cache( 'abort_current', false );
 	}
 
 	/**
+	 * Checks if the background process is paused.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return bool True if the process is paused, false otherwise.
+	 */
+	public function is_paused() {
+		return (bool) $this->importer->options_handler->get_option_no_cache( 'paused', false );
+	}
+
+	/**
+	 * Pauses the background process.
+	 *
+	 * Sets the paused flag. The currently running batch will finish
+	 * its current item, then stop picking up new items.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function pause() {
+		if ( $this->is_in_progress() && ! $this->is_paused() ) {
+			$this->importer->options_handler->update_option( 'paused', true );
+			$this->clear_scheduled_event();
+		}
+	}
+
+	/**
+	 * Resumes a paused background process.
+	 *
+	 * Clears the paused flag and re-dispatches the queue.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public function resume() {
+		if ( $this->is_paused() ) {
+			$this->importer->options_handler->delete_option( 'paused' );
+
+			if ( ! $this->is_queue_empty() ) {
+				$this->dispatch();
+			}
+		}
+	}
+
+	/**
+	 * Dispatches the background process.
+	 *
+	 * Overrides parent to prevent dispatch when paused.
+	 *
+	 * @since 2.2.0
+	 * @return array|WP_Error|void
+	 */
+	public function dispatch() {
+		if ( $this->is_paused() ) {
+			return;
+		}
+
+		return parent::dispatch();
+	}
+
+	/**
 	 * Touches the background process to restart if needed.
 	 *
 	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function touch() {
+		if ( $this->is_paused() ) {
+			return;
+		}
+
 		if ( ! $this->is_process_running() && ! $this->is_queue_empty() ) {
 			// Background process down, but was not finished. Restart it.
 			$this->dispatch();
@@ -111,24 +184,45 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 
 	/**
 	 * Aborts the background process if it's in progress.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function abort() {
-		if ( $this->is_in_progress() ) {
+		if ( $this->is_in_progress() || $this->is_paused() ) {
+			// Clear pause first so the abort can proceed.
+			$this->importer->options_handler->delete_option( 'paused' );
 			$this->importer->options_handler->update_option( 'abort_current', true );
+
+			// If paused, the process isn't running, so manually clear the queue.
+			if ( ! $this->is_process_running() ) {
+				$this->delete_all_batches();
+				$this->clear_scheduled_event();
+				$this->clear_options();
+				do_action( $this->identifier . '_complete' );
+			}
 		}
 	}
 
 	/**
 	 * Clears options on start and finish.
+	 *
+	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	public function clear_options() {
 		$this->importer->options_handler->delete_option( 'abort_current' );
+		$this->importer->options_handler->delete_option( 'paused' );
 	}
 
 	/**
 	 * Complete the background process.
 	 *
 	 * @since 2.0.2
+	 *
+	 * @return void
 	 */
 	protected function complete() {
 		parent::complete();
@@ -153,6 +247,12 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 			return false;
 		}
 
+		// Pause check: stop processing without destroying the queue.
+		if ( $this->is_paused() ) {
+			add_filter( $this->identifier . '_time_exceeded', '__return_true' );
+			return $task;
+		}
+
 		if ( ! isset( $task['action'] ) ) {
 			return false;
 		}
@@ -170,7 +270,7 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 				throw new GeoDir_Converter_Execution_Time_Exception(
 					sprintf(
 						/* translators: %d: Maximum execution time in seconds */
-						esc_html__( 'Maximum execution time is set to %d seconds.', 'geodir-booking' ),
+						__( 'Maximum execution time is set to %d seconds.', 'geodir-booking' ),
 						$timeout
 					)
 				);
@@ -180,13 +280,19 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 			$import_method = "task_{$action}";
 
 			if ( method_exists( $this->importer, $import_method ) ) {
-				return $this->importer->$import_method( $task );
+				$this->importer->suspend_hooks();
+				$result = $this->importer->$import_method( $task );
+				$this->importer->restore_hooks();
+				$this->importer->flush_stats();
+				$this->importer->flush_logs();
+				$this->importer->flush_failed_items();
+				return $result;
 			}
 
 			throw new InvalidArgumentException(
 				sprintf(
 					/* translators: %s: Invalid action name */
-					esc_html__( 'Invalid action: %s', 'geodir-converter' ),
+					__( 'Invalid action: %s', 'geodir-converter' ),
 					$import_method
 				)
 			);
@@ -195,6 +301,9 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 			add_filter( $this->identifier . '_time_exceeded', '__return_true' );
 
 			$this->importer->log( $e->getMessage(), 'warning' );
+			$this->importer->flush_stats();
+			$this->importer->flush_logs();
+			$this->importer->flush_failed_items();
 
 			/**
 			 * Edge case: Hosts with low `max_execution_time` settings.
@@ -205,6 +314,9 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 			return $task;
 		} catch ( Exception $e ) {
 			$this->importer->log( 'Import error: ' . $e->getMessage(), 'error' );
+			$this->importer->flush_stats();
+			$this->importer->flush_logs();
+			$this->importer->flush_failed_items();
 		}
 
 		return false;
@@ -214,7 +326,9 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 	 * Adds converter tasks to the background process.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param array $workload The workload to process.
+	 * @return void
 	 */
 	public function add_converter_tasks( $workload ) {
 		$tasks = array(
@@ -232,12 +346,15 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 	/**
 	 * Adds import tasks to the background process.
 	 *
-	 * @param array $workloads [[id, title, type], ...]
+	 * @since 2.0.2
+	 *
+	 * @param array $workloads Array of workload items, each containing id, title, and type.
+	 * @return void
 	 */
 	public function add_import_tasks( $workloads ) {
 		$tasks = array_map(
 			function ( $workload ) {
-				$workload['action'] = isset( $workload['action'] ) ? $workload['action'] : GeoDir_Converter_Importer::ACTION_IMPORT_LISTING;
+				$workload['action'] = isset( $workload['action'] ) ? $workload['action'] : GeoDir_Converter_Importer::ACTION_IMPORT_LISTINGS;
 				return $workload;
 			},
 			$workloads
@@ -250,7 +367,9 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 	 * Adds tasks to the background process.
 	 *
 	 * @since 2.0.2
+	 *
 	 * @param array $tasks The tasks to add.
+	 * @return void
 	 */
 	protected function add_tasks( $tasks ) {
 		$batch_size = $this->importer->get_batch_size();
@@ -261,5 +380,46 @@ class GeoDir_Converter_Background_Process extends GeoDir_Background_Process {
 		}
 
 		$this->touch();
+	}
+
+	/**
+	 * Re-queues failed items for retry.
+	 *
+	 * @since 2.2.0
+	 * @return bool True if items were re-queued, false otherwise.
+	 */
+	public function retry_failed_items() {
+		$failed_items = $this->importer->get_failed_items();
+
+		if ( empty( $failed_items ) ) {
+			return false;
+		}
+
+		// Build tasks from failed items, grouped by action.
+		$tasks = array();
+		foreach ( $failed_items as $item ) {
+			$tasks[] = array(
+				'action'    => isset( $item['action'] ) ? $item['action'] : GeoDir_Converter_Importer::ACTION_IMPORT_LISTINGS,
+				'source_id' => $item['source_id'],
+				'title'     => isset( $item['item_title'] ) ? $item['item_title'] : '',
+				'retry'     => true,
+			);
+		}
+
+		// Adjust stats: subtract failed count so progress recalculates correctly.
+		$failed_count = count( $tasks );
+		$stats        = (array) $this->importer->options_handler->get_option_no_cache( 'stats' );
+		$empty_stats  = $this->importer->empty_stats();
+		$stats        = wp_parse_args( $stats, $empty_stats );
+
+		$stats['failed'] = max( 0, (int) $stats['failed'] - $failed_count );
+
+		$this->importer->options_handler->update_option( 'stats', $stats );
+
+		// Clear failed items and re-queue.
+		$this->importer->clear_failed_items();
+		$this->add_import_tasks( $tasks );
+
+		return true;
 	}
 }

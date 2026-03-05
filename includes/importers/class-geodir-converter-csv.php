@@ -75,28 +75,18 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Initialize hooks.
 	 *
 	 * @since 2.3.0
+	 *
+	 * @return void
 	 */
 	protected function init() {
-	}
-
-	/**
-	 * Get class instance.
-	 *
-	 * @since 2.3.0
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
 	}
 
 	/**
 	 * Get importer title.
 	 *
 	 * @since 2.3.0
-	 * @return string
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'CSV', 'geodir-converter' );
@@ -106,7 +96,8 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get importer description.
 	 *
 	 * @since 2.3.0
-	 * @return string
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings from a CSV file with column mapping.', 'geodir-converter' );
@@ -116,7 +107,8 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get importer icon URL.
 	 *
 	 * @since 2.3.0
-	 * @return string
+	 *
+	 * @return string The importer icon URL.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/csv.png';
@@ -126,7 +118,8 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get importer task action.
 	 *
 	 * @since 2.3.0
-	 * @return string
+	 *
+	 * @return string The importer action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_PARSE_LISTINGS;
@@ -136,6 +129,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Render importer settings.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @return void
 	 */
 	public function render_settings() {
@@ -159,6 +153,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Render the upload step HTML.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @return void
 	 */
 	public function render_upload_step() {
@@ -225,6 +220,8 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render the mapping step HTML.
+	 *
+	 * @since 2.3.0
 	 *
 	 * @return void
 	 */
@@ -302,11 +299,12 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 			</div>
 			
 			<div class="geodir-converter-actions mt-3 mb-3 d-flex justify-content-between align-items-center">
-				<div>
-					<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-					<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
+				<div class="d-flex flex-wrap gap-2">
+					<button type="button" class="btn btn-primary btn-sm geodir-converter-import"><i class="fas fa-play me-1"></i><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
+					<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><i class="fas fa-stop me-1"></i><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
+					<button type="button" class="btn btn-outline-warning btn-sm geodir-converter-retry-failed d-none"><i class="fas fa-redo me-1"></i><?php esc_html_e( 'Retry Failed', 'geodir-converter' ); ?></button>
 				</div>
-				<button type="button" class="btn btn-outline-secondary btn-sm geodir-converter-csv-back"><?php esc_html_e( 'Upload Different File', 'geodir-converter' ); ?></button>
+				<button type="button" class="btn btn-outline-secondary btn-sm geodir-converter-csv-back"><i class="fas fa-arrow-left me-1"></i><?php esc_html_e( 'Upload Different File', 'geodir-converter' ); ?></button>
 			</div>
 			<?php
 			$this->display_progress();
@@ -321,6 +319,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Render column mapping table.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @return void
 	 */
 	public function render_column_mapping_table() {
@@ -354,7 +353,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 				<?php
 				printf(
 					/* translators: %d: number of listings */
-					esc_html__( 'Found %d listings.', 'geodir-converter' ),
+					__( 'Found %d listings.', 'geodir-converter' ),
 					absint( $row_count )
 				);
 				?>
@@ -404,6 +403,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get mapping fields for a post type.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $post_type Post type.
 	 * @return array Array of field_key => field_label.
 	 */
@@ -472,6 +472,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Validate importer settings.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param array $settings The settings to validate.
 	 * @param array $files    The files to validate.
 	 * @return array|WP_Error Validated and sanitized settings or WP_Error on failure.
@@ -554,7 +555,8 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get next task.
 	 *
 	 * @since 2.3.0
-	 * @param array $task The current task.
+	 *
+	 * @param array $task         The current task.
 	 * @param bool  $reset_offset Whether to reset the offset.
 	 * @return array|false The next task or false if all tasks are completed.
 	 */
@@ -585,6 +587,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Task: Parse CSV file and batch listings for import.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param array $task Task data.
 	 * @return array|false Task data or false on completion.
 	 */
@@ -622,6 +625,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 		}
 
 		if ( 0 === $offset ) {
+			/* translators: %d: number of listings */
 			$this->log( sprintf( __( 'Found %d listings for import.', 'geodir-converter' ), count( $all_rows ) ), 'success' );
 			$this->increase_imports_total( count( $all_rows ) );
 		}
@@ -658,6 +662,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Task: Import a batch of listings from CSV.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param array $task Task data.
 	 * @return array|false Stats array or false on completion.
 	 */
@@ -669,44 +674,17 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 
 		$this->maybe_create_importer_id_field( $post_type );
 
-		$stats = array(
-			'imported' => 0,
-			'updated'  => 0,
-			'skipped'  => 0,
-			'failed'   => 0,
-		);
-
 		if ( empty( $rows ) ) {
-			return $stats;
+			return false;
 		}
 
-		foreach ( $rows as $row ) {
+		foreach ( $rows as $row_index => $row ) {
 			$result = $this->import_single_listing( $row, $column_mapping, $post_type, $settings );
 
-			switch ( $result['status'] ) {
-				case self::IMPORT_STATUS_SUCCESS:
-					$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'listing', $result['post_title'] ), 'success' );
-					++$stats['imported'];
-					break;
-				case self::IMPORT_STATUS_UPDATED:
-					$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'listing', $result['post_title'] ), 'warning' );
-					++$stats['updated'];
-					break;
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $result['post_title'] ), 'warning' );
-					++$stats['skipped'];
-					break;
-				case self::IMPORT_STATUS_FAILED:
-				default:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $result['post_title'] ), 'warning' );
-					++$stats['failed'];
-					break;
-			}
+			$this->process_import_result( $result['status'], 'listing', $result['post_title'], $row_index );
 		}
 
-		$this->increase_succeed_imports( $stats['imported'] + $stats['updated'] );
-		$this->increase_skipped_imports( $stats['skipped'] );
-		$this->increase_failed_imports( $stats['failed'] );
+		$this->flush_failed_items();
 
 		return false;
 	}
@@ -715,10 +693,11 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Import a single listing from CSV.
 	 *
 	 * @since 2.3.0
-	 * @param array  $row The row data.
+	 *
+	 * @param array  $row            The row data.
 	 * @param array  $column_mapping The column mapping.
-	 * @param string $post_type The post type.
-	 * @param array  $settings The settings.
+	 * @param string $post_type      The post type.
+	 * @param array  $settings       The settings.
 	 * @return array Array with 'status' and 'post_title' keys.
 	 */
 	protected function import_single_listing( $row, $column_mapping, $post_type, $settings ) {
@@ -881,6 +860,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 		}
 
 		if ( ! empty( $listing_data['featured_image'] ) ) {
+			/* translators: %s: image URL */
 			$this->log( sprintf( __( 'Importing featured image: %s', 'geodir-converter' ), $listing_data['featured_image'] ), 'info' );
 			$attachment = $this->import_attachment( $listing_data['featured_image'] );
 
@@ -896,6 +876,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 			$image_urls = array_filter( $image_urls );
 			$images     = array();
 
+			/* translators: %d: number of images */
 			$this->log( sprintf( __( 'Importing %d post images', 'geodir-converter' ), count( $image_urls ) ), 'info' );
 
 			foreach ( $image_urls as $image_url ) {
@@ -966,8 +947,9 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Build a normalized location array for CSV row data.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param array $listing_data The listing data.
-	 * @return array
+	 * @return array Normalized location array.
 	 */
 	private function build_location( $listing_data ) {
 		$defaults = array(
@@ -1020,7 +1002,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 					/* translators: 1: latitude value, 2: longitude value */
-					esc_html__( 'Resolving address from coordinates %1$s,%2$s', 'geodir-converter' ),
+					__( 'Resolving address from coordinates %1$s,%2$s', 'geodir-converter' ),
 					$location['latitude'],
 					$location['longitude']
 				),
@@ -1043,6 +1025,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Process taxonomy terms from CSV mapping.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param array  $tax_input The raw taxonomy input from CSV.
 	 * @param string $post_type The post type.
 	 * @return array Processed taxonomy input array.
@@ -1096,7 +1079,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 						$this->log(
 							sprintf(
 								/* translators: 1: term name, 2: taxonomy name, 3: error message */
-								esc_html__( 'Failed to create term "%1$s" in taxonomy "%2$s": %3$s', 'geodir-converter' ),
+								__( 'Failed to create term "%1$s" in taxonomy "%2$s": %3$s', 'geodir-converter' ),
 								esc_html( $term_name ),
 								esc_html( $taxonomy ),
 								esc_html( $term->get_error_message() )
@@ -1123,6 +1106,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Maybe create the importer ID field.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $post_type Post type.
 	 * @return void
 	 */
@@ -1162,8 +1146,9 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Maybe update field options if CSV value contains multiple options.
 	 *
 	 * @since 2.3.0
-	 * @param string $gd_field The GeoDirectory field key.
-	 * @param string $value The CSV value.
+	 *
+	 * @param string $gd_field  The GeoDirectory field key.
+	 * @param string $value     The CSV value.
 	 * @param string $post_type The post type.
 	 * @return void
 	 */
@@ -1234,7 +1219,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 					/* translators: 1: field name, 2: number of new options */
-					esc_html__( 'Updated field "%1$s" with %2$d new option(s).', 'geodir-converter' ),
+					__( 'Updated field "%1$s" with %2$d new option(s).', 'geodir-converter' ),
 					esc_html( $gd_field ),
 					count( $new_options )
 				),
@@ -1247,8 +1232,9 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Format field value based on field type.
 	 *
 	 * @since 2.3.0
-	 * @param string $gd_field The GeoDirectory field key.
-	 * @param string $value The CSV value.
+	 *
+	 * @param string $gd_field  The GeoDirectory field key.
+	 * @param string $value     The CSV value.
 	 * @param string $post_type The post type.
 	 * @return string Formatted value.
 	 */
@@ -1291,9 +1277,10 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get sample data from first CSV row.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $file_path CSV file path.
 	 * @param string $delimiter CSV delimiter.
-	 * @param array  $headers CSV headers.
+	 * @param array  $headers   CSV headers.
 	 * @return array Array of column => sample_value.
 	 */
 	public function get_csv_sample_data( $file_path, $delimiter, $headers ) {
@@ -1333,6 +1320,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get CSV headers from file.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $file_path CSV file path.
 	 * @param string $delimiter CSV delimiter.
 	 * @return array|WP_Error Array of headers or WP_Error on failure.
@@ -1364,6 +1352,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Count CSV rows (excluding header).
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $file_path CSV file path.
 	 * @param string $delimiter CSV delimiter.
 	 * @return int Number of rows.
@@ -1391,6 +1380,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get date format options.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @return array Date format options.
 	 */
 	private function get_date_format_options() {
@@ -1413,6 +1403,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get encoding options.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @return array Encoding options.
 	 */
 	private function get_encoding_options() {
@@ -1430,6 +1421,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Auto-detect date format from sample data.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param array $sample_data Sample data from CSV.
 	 * @return string Detected date format or 'auto' if not detected.
 	 */
@@ -1494,6 +1486,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Detect CSV file encoding.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $file_path CSV file path.
 	 * @return string Detected encoding.
 	 */
@@ -1530,6 +1523,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Convert date string to WordPress format.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $date_string The date string from CSV.
 	 * @param string $format      The date format.
 	 * @return string WordPress formatted date or original string on failure.
@@ -1570,6 +1564,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Get saved mapping templates.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @return array Saved templates.
 	 */
 	private function get_saved_templates() {
@@ -1581,6 +1576,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Save mapping template.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $name    Template name.
 	 * @param array  $mapping Column mapping.
 	 * @return array|WP_Error Array with template_id and template_name on success or WP_Error on failure.
@@ -1621,6 +1617,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Load mapping template.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $template_id Template ID.
 	 * @return array|WP_Error Template data or WP_Error on failure.
 	 */
@@ -1647,6 +1644,7 @@ class GeoDir_Converter_CSV extends GeoDir_Converter_Importer {
 	 * Delete mapping template.
 	 *
 	 * @since 2.3.0
+	 *
 	 * @param string $template_id Template ID.
 	 * @return bool|WP_Error True on success or WP_Error on failure.
 	 */

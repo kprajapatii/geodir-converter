@@ -11,7 +11,7 @@ namespace GeoDir_Converter\Importers;
 use WP_Error;
 use GeoDir_Media;
 use GeoDir_Comments;
-use GeoDir_Converter\GeoDir_Converter_Utils;
+
 use GeoDir_Converter\Abstracts\GeoDir_Converter_Importer;
 
 defined( 'ABSPATH' ) || exit;
@@ -55,25 +55,17 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	 * Initialize hooks.
 	 *
 	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	protected function init() {}
 
 	/**
-	 * Get class instance.
-	 *
-	 * @return static
-	 */
-	public static function instance() {
-		if ( null === static::$instance ) {
-			static::$instance = new static();
-		}
-		return static::$instance;
-	}
-
-	/**
 	 * Get importer title.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer title.
 	 */
 	public function get_title() {
 		return __( 'Directories Pro', 'geodir-converter' );
@@ -82,7 +74,9 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer description.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer description.
 	 */
 	public function get_description() {
 		return __( 'Import listings from your Directories Pro installation.', 'geodir-converter' );
@@ -91,7 +85,9 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer icon URL.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The importer icon URL.
 	 */
 	public function get_icon() {
 		return GEODIR_CONVERTER_PLUGIN_URL . 'assets/images/directories-pro.jpeg';
@@ -100,7 +96,9 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Get importer task action.
 	 *
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @return string The initial import action identifier.
 	 */
 	public function get_action() {
 		return self::ACTION_IMPORT_CATEGORIES;
@@ -108,6 +106,10 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 
 	/**
 	 * Render importer settings.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function render_settings() {
 		$drts_bundles = $this->get_available_bundles();
@@ -134,10 +136,7 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 			$this->display_error_alert();
 			?>
 
-			<div class="geodir-converter-actions mt-3">
-				<button type="button" class="btn btn-primary btn-sm geodir-converter-import me-2"><?php esc_html_e( 'Start Import', 'geodir-converter' ); ?></button>
-				<button type="button" class="btn btn-outline-danger btn-sm geodir-converter-abort"><?php esc_html_e( 'Abort', 'geodir-converter' ); ?></button>
-			</div>
+			<?php $this->display_action_buttons(); ?>
 		</form>
 		<?php
 	}
@@ -145,10 +144,11 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Validate importer settings.
 	 *
-	 * @param array $settings The settings to validate.
-	 * @param array $files    The files to validate.
+	 * @since 2.2.0
 	 *
-	 * @return array Validated and sanitized settings.
+	 * @param array $settings The settings to validate.
+	 * @param array $files    Optional. The uploaded files to validate. Default empty array.
+	 * @return array|WP_Error Validated and sanitized settings array or WP_Error on failure.
 	 */
 	public function validate_settings( array $settings, array $files = array() ) {
 		$post_types = geodir_get_posttypes();
@@ -179,12 +179,13 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get next task.
+	 * Get next task in the import sequence.
 	 *
-	 * @param array $task The current task.
-	 * @param bool  $reset_offset Whether to reset the offset.
+	 * @since 2.2.0
 	 *
-	 * @return array|false The next task or false if all tasks are completed.
+	 * @param array $task         The current task data.
+	 * @param bool  $reset_offset Optional. Whether to reset the offset counter. Default false.
+	 * @return array|false The next task array or false if all tasks are completed.
 	 */
 	public function next_task( $task, $reset_offset = false ) {
 		$task['imported'] = 0;
@@ -214,6 +215,10 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 
 	/**
 	 * Calculate the total number of items to be imported.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
 	 */
 	public function set_import_total() {
 		global $wpdb;
@@ -260,9 +265,9 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	 * Import categories from Directories Pro to GeoDirectory.
 	 *
 	 * @since 2.2.0
-	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task data including the current action and counters.
+	 * @return array Updated task data with the next action.
 	 */
 	public function task_import_categories( $task ) {
 		global $wpdb;
@@ -271,11 +276,11 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 		$this->set_import_total();
 
 		// Log import started.
-		$this->log( esc_html__( 'Categories: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Categories: Import started.', 'geodir-converter' ) );
 
 		$bundle_name = $this->get_import_setting( 'drts_bundle', '' );
 		if ( empty( $bundle_name ) ) {
-			$this->log( esc_html__( 'Categories: No bundle selected.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No bundle selected.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -288,7 +293,7 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 					/* translators: %1$s: post type, %2$s: list of taxonomies */
-					esc_html__( 'Categories: No category taxonomy found for post type %1$s. Available taxonomies: %2$s', 'geodir-converter' ),
+					__( 'Categories: No category taxonomy found for post type %1$s. Available taxonomies: %2$s', 'geodir-converter' ),
 					$post_type,
 					implode( ', ', $all_taxonomies )
 				),
@@ -298,7 +303,7 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 		}
 
 		if ( 0 === (int) wp_count_terms( $category_taxonomy ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -315,15 +320,16 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $categories ) || is_wp_error( $categories ) ) {
-			$this->log( esc_html__( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Categories: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $categories ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported categories, %2$d: number of failed categories */
-					esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $categories ),
 					0
 				),
@@ -340,7 +346,7 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: %1$d: number of imported categories, %2$d: number of failed categories */
-				esc_html__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Categories: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -354,18 +360,18 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	 * Import tags from Directories Pro to GeoDirectory.
 	 *
 	 * @since 2.2.0
-	 * @param array $task Import task.
 	 *
-	 * @return array Result of the import operation.
+	 * @param array $task Import task data including the current action and counters.
+	 * @return array Updated task data with the next action.
 	 */
 	public function task_import_tags( $task ) {
 		global $wpdb;
 
-		$this->log( esc_html__( 'Tags: Import started.', 'geodir-converter' ) );
+		$this->log( __( 'Tags: Import started.', 'geodir-converter' ) );
 
 		$bundle_name = $this->get_import_setting( 'drts_bundle', '' );
 		if ( empty( $bundle_name ) ) {
-			$this->log( esc_html__( 'Tags: No bundle selected.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Tags: No bundle selected.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -378,7 +384,7 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 			$this->log(
 				sprintf(
 					/* translators: %1$s: post type, %2$s: list of taxonomies */
-					esc_html__( 'Tags: No tag taxonomy found for post type %1$s. Available taxonomies: %2$s', 'geodir-converter' ),
+					__( 'Tags: No tag taxonomy found for post type %1$s. Available taxonomies: %2$s', 'geodir-converter' ),
 					$post_type,
 					implode( ', ', $all_taxonomies )
 				),
@@ -388,7 +394,7 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 		}
 
 		if ( 0 === (int) wp_count_terms( $tag_taxonomy ) ) {
-			$this->log( esc_html__( 'Tags: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Tags: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -405,15 +411,16 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 		);
 
 		if ( empty( $tags ) || is_wp_error( $tags ) ) {
-			$this->log( esc_html__( 'Tags: No items to import.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Tags: No items to import.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
 		if ( $this->is_test_mode() ) {
+			$this->increase_succeed_imports( count( $tags ) );
 			$this->log(
 				sprintf(
 				/* translators: %1$d: number of imported tags, %2$d: number of failed tags */
-					esc_html__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+					__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 					count( $tags ),
 					0
 				),
@@ -430,7 +437,7 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 		$this->log(
 			sprintf(
 				/* translators: %1$d: number of imported tags, %2$d: number of failed tags */
-				esc_html__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
+				__( 'Tags: Import completed. %1$d imported, %2$d failed.', 'geodir-converter' ),
 				$result['imported'],
 				$result['failed']
 			),
@@ -443,7 +450,9 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Get custom fields for Directories Pro listings.
 	 *
-	 * @return array The custom fields.
+	 * @since 2.2.0
+	 *
+	 * @return array Array of custom field definition arrays.
 	 */
 	private function get_custom_fields() {
 		global $wpdb;
@@ -643,8 +652,10 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Remove 'field_' prefix from field name.
 	 *
-	 * @param string $field_name Field name.
-	 * @return string Field name without prefix.
+	 * @since 2.2.0
+	 *
+	 * @param string $field_name Field name to strip the prefix from.
+	 * @return string Field name without the 'field_' prefix.
 	 */
 	private function remove_field_prefix( $field_name ) {
 		return preg_replace( '/^field_/', '', $field_name );
@@ -652,6 +663,8 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 
 	/**
 	 * Check if a field name maps to a GeoDirectory address field.
+	 *
+	 * @since 2.2.0
 	 *
 	 * @param string $field_name Directories Pro field name.
 	 * @return string|false GeoDirectory address field key (street, city, region, country, zip) or false.
@@ -721,11 +734,14 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 
 	/**
 	 * Map Directories Pro field name to GeoDirectory predefined field key.
+	 *
 	 * Uses Directories Pro's predefined field names from directory_listing_fields.php.
 	 *
+	 * @since 2.2.0
+	 *
 	 * @param string $field_name Directories Pro field name.
-	 * @param string $field_type Directories Pro field type.
-	 * @return string|false GeoDirectory field key or false if no mapping.
+	 * @param string $field_type Optional. Directories Pro field type. Default empty string.
+	 * @return string|false GeoDirectory field key or false if no mapping exists.
 	 */
 	private function map_to_predefined_field( $field_name, $field_type = '' ) {
 		// Directories Pro predefined field names -> GeoDirectory field keys.
@@ -778,11 +794,14 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 
 	/**
 	 * Get individual social media fields from social_accounts field type.
+	 *
 	 * Only creates fields that don't already exist as predefined GeoDirectory fields.
 	 *
-	 * @param string $base_label Base label for the social accounts field.
-	 * @param string $post_type Post type to check for existing fields.
-	 * @return array Array of social media field definitions.
+	 * @since 2.2.0
+	 *
+	 * @param string $base_label Optional. Base label for the social accounts field. Default empty string.
+	 * @param string $post_type  Optional. Post type to check for existing fields. Default empty string.
+	 * @return array Array of social media field definition arrays.
 	 */
 	private function get_social_media_fields( $base_label = '', $post_type = '' ) {
 		$social_platforms = array(
@@ -845,10 +864,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Map Directories Pro field type to GeoDirectory field type.
 	 *
-	 * @param string $drts_type Directories Pro field type.
-	 * @param array  $field_config_settings Field configuration settings.
-	 * @param array  $field_data_raw Raw field data.
-	 * @param bool   $is_multiselect Whether this is a multiselect field.
+	 * @since 2.2.0
+	 *
+	 * @param string $drts_type             Directories Pro field type identifier.
+	 * @param array  $field_config_settings  Optional. Field configuration settings. Default empty array.
+	 * @param array  $field_data_raw         Optional. Raw field data. Default empty array.
+	 * @param bool   $is_multiselect         Optional. Whether this is a multiselect field. Default false.
 	 * @return string|false GeoDirectory field type or false if not supported.
 	 */
 	private function map_field_type( $drts_type, $field_config_settings = array(), $field_data_raw = array(), $is_multiselect = false ) {
@@ -893,10 +914,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get database data type for field type.
+	 * Get database data type for a GeoDirectory field type.
 	 *
-	 * @param string $field_type Field type.
-	 * @return string Data type.
+	 * @since 2.2.0
+	 *
+	 * @param string $field_type GeoDirectory field type identifier.
+	 * @return string The corresponding database data type (e.g. VARCHAR, TEXT, TINYINT).
 	 */
 	private function map_data_type( $field_type ) {
 		$type_map = array(
@@ -925,8 +948,10 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Get appropriate icon for field based on field key.
 	 *
-	 * @param string $field_key Field key.
-	 * @return string Icon class.
+	 * @since 2.2.0
+	 *
+	 * @param string $field_key Field key to match against known icon mappings.
+	 * @return string Font Awesome icon class for the field, or a default info-circle icon.
 	 */
 	private function get_icon_for_field( $field_key ) {
 		$icon_map = array(
@@ -960,11 +985,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	 * Import fields from Directories Pro to GeoDirectory.
 	 *
 	 * @since 2.2.0
-	 * @param array $task Task details.
-	 * @return array Result of the import operation.
+	 *
+	 * @param array $task Task details including action and offset information.
+	 * @return array Result of the import operation with next task details.
 	 */
 	public function task_import_fields( array $task ) {
-		$this->log( esc_html__( 'Importing custom fields...', 'geodir-converter' ) );
+		$this->log( __( 'Importing custom fields...', 'geodir-converter' ) );
 
 		$post_type   = $this->get_import_post_type();
 		$fields      = $this->get_custom_fields();
@@ -1083,10 +1109,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	/**
 	 * Prepare single field for GeoDirectory.
 	 *
-	 * @param array  $field Directories Pro field data.
-	 * @param string $post_type Post type.
-	 * @param array  $package_ids Package IDs.
-	 * @return array GeoDirectory field data.
+	 * @since 2.2.0
+	 *
+	 * @param array  $field       Directories Pro field data including type, label, and options.
+	 * @param string $post_type   GeoDirectory post type to assign the field to.
+	 * @param array  $package_ids Array of package IDs to associate with the field.
+	 * @return array GeoDirectory-compatible field data array ready for saving.
 	 */
 	private function prepare_single_field( $field, $post_type, $package_ids = array() ) {
 		$field_type = isset( $field['type'] ) ? $field['type'] : 'text';
@@ -1149,21 +1177,22 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	 * Parse and batch listings for background import.
 	 *
 	 * @since 2.2.0
-	 * @param array $task The task to import.
-	 * @return array Result of the import operation.
+	 *
+	 * @param array $task The task data including offset and total listings count.
+	 * @return array Updated task with next offset, or next task result if complete.
 	 */
 	public function task_parse_listings( array $task ) {
 		global $wpdb;
 
 		$bundle_name = $this->get_import_setting( 'drts_bundle', '' );
 		if ( empty( $bundle_name ) ) {
-			$this->log( esc_html__( 'No bundle selected.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'No bundle selected.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
 		$bundle_info = $this->get_bundle_info( $bundle_name );
 		if ( ! $bundle_info ) {
-			$this->log( esc_html__( 'Bundle not found.', 'geodir-converter' ), 'warning' );
+			$this->log( __( 'Bundle not found.', 'geodir-converter' ), 'warning' );
 			return $this->next_task( $task );
 		}
 
@@ -1186,7 +1215,7 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 			return $this->next_task( $task, true );
 		}
 
-		wp_suspend_cache_addition( false );
+		wp_suspend_cache_addition( true );
 
 		$listings = $wpdb->get_results(
 			$wpdb->prepare(
@@ -1233,8 +1262,9 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	 * Import a batch of listings (called by background process).
 	 *
 	 * @since 2.2.0
-	 * @param array $task The task to import.
-	 * @return bool Result of the import operation.
+	 *
+	 * @param array $task The task data containing an array of listing objects to import.
+	 * @return bool Always returns false to indicate the task is complete.
 	 */
 	public function task_import_listings( $task ) {
 		$listings = isset( $task['listings'] ) && ! empty( $task['listings'] ) ? (array) $task['listings'] : array();
@@ -1243,28 +1273,10 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 			$title  = $listing->post_title;
 			$status = $this->import_single_listing( $listing );
 
-			switch ( $status ) {
-				case self::IMPORT_STATUS_SUCCESS:
-				case self::IMPORT_STATUS_UPDATED:
-					if ( self::IMPORT_STATUS_SUCCESS === $status ) {
-						$this->log( sprintf( self::LOG_TEMPLATE_SUCCESS, 'listing', $title ), 'success' );
-					} else {
-						$this->log( sprintf( self::LOG_TEMPLATE_UPDATED, 'listing', $title ), 'warning' );
-					}
-
-					$this->increase_succeed_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_SKIPPED:
-					$this->log( sprintf( self::LOG_TEMPLATE_SKIPPED, 'listing', $title ), 'warning' );
-					$this->increase_skipped_imports( 1 );
-					break;
-				case self::IMPORT_STATUS_FAILED:
-				default:
-					$this->log( sprintf( self::LOG_TEMPLATE_FAILED, 'listing', $title ), 'warning' );
-					$this->increase_failed_imports( 1 );
-					break;
-			}
+			$this->process_import_result( $status, 'listing', $title, $listing->ID );
 		}
+
+		$this->flush_failed_items();
 
 		return false;
 	}
@@ -1273,11 +1285,17 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	 * Convert a single Directories Pro listing to GeoDirectory format.
 	 *
 	 * @since 2.2.0
-	 * @param  object $listing The post object to convert.
-	 * @return int Import status.
+	 *
+	 * @param object $listing The post object to convert containing ID, post_title, and post_status.
+	 * @return int Import status constant (IMPORT_STATUS_SUCCESS, IMPORT_STATUS_UPDATED, or IMPORT_STATUS_FAILED).
 	 */
 	private function import_single_listing( $listing ) {
-		$post       = get_post( $listing->ID );
+		$post = get_post( $listing->ID );
+
+		if ( ! $post ) {
+			return self::IMPORT_STATUS_FAILED;
+		}
+
 		$post_type  = $this->get_import_post_type();
 		$gd_post_id = ! $this->is_test_mode() ? $this->get_gd_listing_id( $post->ID, $this->importer_id . '_id', $post_type ) : false;
 		$is_update  = ! empty( $gd_post_id );
@@ -1319,17 +1337,9 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 		$latitude  = isset( $field_values['location_latitude'] ) && ! empty( $field_values['location_latitude'] ) ? $field_values['location_latitude'] : '';
 		$longitude = isset( $field_values['location_longitude'] ) && ! empty( $field_values['location_longitude'] ) ? $field_values['location_longitude'] : '';
 
-		if ( $latitude && $longitude ) {
-			$this->log( 'Pulling listing address from coordinates: ' . $latitude . ', ' . $longitude, 'info' );
-			$location_lookup = GeoDir_Converter_Utils::get_location_from_coords( $latitude, $longitude );
-
-			if ( ! is_wp_error( $location_lookup ) ) {
-				$location = array_merge( $location, $location_lookup );
-			} else {
-				$location['latitude']  = $latitude;
-				$location['longitude'] = $longitude;
-			}
-		}
+		$location['latitude']  = $latitude;
+		$location['longitude'] = $longitude;
+		$location = $this->geocode_location( $latitude, $longitude, $location, $post->ID );
 
 		// Prepare the listing data.
 		$listing_data = array(
@@ -1471,10 +1481,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get field name mapping (original Directories Pro field name -> GeoDirectory field key).
+	 * Get field name mapping from Directories Pro field names to GeoDirectory field keys.
 	 *
-	 * @param string $bundle_name Bundle name.
-	 * @return array Field name mapping.
+	 * @since 2.2.0
+	 *
+	 * @param string $bundle_name Directories Pro bundle name to retrieve mappings for.
+	 * @return array Associative array mapping original field names to GeoDirectory field keys.
 	 */
 	private function get_field_name_mapping( $bundle_name ) {
 		global $wpdb;
@@ -1559,10 +1571,13 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 
 	/**
 	 * Convert Directories Pro opening hours format to GeoDirectory business_hours format.
+	 *
 	 * Returns JSON string format: ["Mo 09:00-17:00","Tu 09:00-17:00"],["UTC":"+00:00"]
 	 *
-	 * @param array $drts_hours Directories Pro opening hours data.
-	 * @return string GeoDirectory business_hours JSON string format.
+	 * @since 2.2.0
+	 *
+	 * @param array $drts_hours Directories Pro opening hours data keyed by day abbreviation.
+	 * @return string GeoDirectory business_hours JSON string, or empty string if no valid hours.
 	 */
 	private function convert_opening_hours_to_business_hours( $drts_hours ) {
 		if ( ! is_array( $drts_hours ) || empty( $drts_hours ) ) {
@@ -1626,11 +1641,13 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get field values from Directories Pro tables.
+	 * Get field values from Directories Pro entity field tables.
 	 *
-	 * @param int    $post_id Post ID.
-	 * @param string $bundle_name Bundle name.
-	 * @return array Field values.
+	 * @since 2.2.0
+	 *
+	 * @param int    $post_id     Directories Pro post ID to retrieve field values for.
+	 * @param string $bundle_name Directories Pro bundle name to filter results by.
+	 * @return array Associative array of field keys to their values.
 	 */
 	private function get_field_values( $post_id, $bundle_name ) {
 		global $wpdb;
@@ -1940,8 +1957,9 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	 * Import comments from Directories Pro listing to GeoDirectory listing.
 	 *
 	 * @since 2.2.0
-	 * @param int $drts_listing_id Directories Pro listing ID.
-	 * @param int $gd_post_id GeoDirectory post ID.
+	 *
+	 * @param int $drts_listing_id Directories Pro listing post ID to import comments from.
+	 * @param int $gd_post_id      GeoDirectory post ID to assign comments to.
 	 * @return void
 	 */
 	private function import_comments( $drts_listing_id, $gd_post_id ) {
@@ -2016,9 +2034,11 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get post images.
+	 * Get post images including featured image and attached media.
 	 *
-	 * @param int $post_id The post ID.
+	 * @since 2.2.0
+	 *
+	 * @param int $post_id The Directories Pro post ID to retrieve images from.
 	 * @return string Formatted gallery images string for GeoDirectory.
 	 */
 	private function get_post_images( $post_id ) {
@@ -2056,10 +2076,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get the featured image URL.
+	 * Get the featured image URL for a post.
 	 *
-	 * @param int $post_id The post ID.
-	 * @return string The featured image URL.
+	 * @since 2.2.0
+	 *
+	 * @param int $post_id The post ID to retrieve the featured image from.
+	 * @return string The full-size featured image URL, or empty string if none exists.
 	 */
 	private function get_featured_image( $post_id ) {
 		$image = wp_get_attachment_image_src( get_post_thumbnail_id( $post_id ), 'full' );
@@ -2067,10 +2089,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Check if field should be skipped.
+	 * Check if a field should be skipped during import.
 	 *
-	 * @param string $htmlvar_name Field HTML variable name.
-	 * @return bool True if should skip, false otherwise.
+	 * @since 2.2.0
+	 *
+	 * @param string $htmlvar_name Field HTML variable name to check.
+	 * @return bool True if the field should be skipped, false otherwise.
 	 */
 	protected function should_skip_field( $htmlvar_name ) {
 		// Don't skip predefined GeoDirectory fields - they should be created/updated.
@@ -2101,12 +2125,14 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get listings terms (categories/tags).
+	 * Get listings terms (categories or tags) with GeoDirectory equivalents.
 	 *
-	 * @param int    $post_id The post ID.
-	 * @param string $taxonomy The taxonomy to get terms from.
-	 * @param string $return_type Return 'ids' or 'names'.
-	 * @return array Array of term IDs or names.
+	 * @since 2.2.0
+	 *
+	 * @param int    $post_id     The Directories Pro post ID to get terms for.
+	 * @param string $taxonomy    The taxonomy slug to retrieve terms from.
+	 * @param string $return_type Whether to return 'ids' or 'names'. Default 'ids'.
+	 * @return array Array of term IDs or term names depending on return type.
 	 */
 	private function get_listings_terms( $post_id, $taxonomy, $return_type = 'ids' ) {
 		global $wpdb;
@@ -2148,10 +2174,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Count the number of listings.
+	 * Count the number of listings for a given post type.
 	 *
-	 * @param string $post_type Post type.
-	 * @return int The number of listings.
+	 * @since 2.2.0
+	 *
+	 * @param string $post_type The post type to count listings for.
+	 * @return int The number of listings matching the allowed post statuses.
 	 */
 	private function count_listings( $post_type ) {
 		global $wpdb;
@@ -2169,9 +2197,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Display bundle selection dropdown.
+	 * Display bundle selection dropdown in the admin settings form.
 	 *
-	 * @param array $bundles Available bundles.
+	 * @since 2.2.0
+	 *
+	 * @param array $bundles Available Directories Pro bundles keyed by bundle name.
+	 * @return void
 	 */
 	private function display_bundle_select( $bundles ) {
 		$drts_bundle = $this->get_import_setting( 'drts_bundle', '' );
@@ -2203,9 +2234,11 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get available Directories Pro bundles.
+	 * Get available Directories Pro bundles from the database.
 	 *
-	 * @return array
+	 * @since 2.2.0
+	 *
+	 * @return array Associative array of bundles keyed by bundle name, each containing name, type, label, count, info, and post_type.
 	 */
 	private function get_available_bundles() {
 		global $wpdb;
@@ -2256,10 +2289,12 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get bundle information.
+	 * Get bundle information for a specific Directories Pro bundle.
 	 *
-	 * @param string $bundle_name Bundle name.
-	 * @return array|null
+	 * @since 2.2.0
+	 *
+	 * @param string $bundle_name The Directories Pro bundle name to look up.
+	 * @return array|null Bundle data array containing name, type, label, count, info, and post_type, or null if not found.
 	 */
 	private function get_bundle_info( $bundle_name ) {
 		$bundles = $this->get_available_bundles();
@@ -2267,11 +2302,13 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get category taxonomy for bundle.
+	 * Get category taxonomy for a Directories Pro bundle.
 	 *
-	 * @param string $bundle_name Bundle name.
-	 * @param array  $bundle_info Bundle information.
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @param string $bundle_name The Directories Pro bundle name.
+	 * @param array  $bundle_info Optional. Bundle information array. Default empty array.
+	 * @return string The category taxonomy slug, or empty string if not found.
 	 */
 	private function get_category_taxonomy( $bundle_name, $bundle_info = array() ) {
 		global $wpdb;
@@ -2345,11 +2382,13 @@ class GeoDir_Converter_Directories_Pro extends GeoDir_Converter_Importer {
 	}
 
 	/**
-	 * Get tag taxonomy for bundle.
+	 * Get tag taxonomy for a Directories Pro bundle.
 	 *
-	 * @param string $bundle_name Bundle name.
-	 * @param array  $bundle_info Bundle information.
-	 * @return string
+	 * @since 2.2.0
+	 *
+	 * @param string $bundle_name The Directories Pro bundle name.
+	 * @param array  $bundle_info Optional. Bundle information array. Default empty array.
+	 * @return string The tag taxonomy slug, or empty string if not found.
 	 */
 	private function get_tag_taxonomy( $bundle_name, $bundle_info = array() ) {
 		global $wpdb;

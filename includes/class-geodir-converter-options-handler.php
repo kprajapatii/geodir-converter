@@ -29,6 +29,8 @@ class GeoDir_Converter_Options_Handler {
 	/**
 	 * Constructor to initialize the prefix.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $prefix The prefix for the options.
 	 */
 	public function __construct( $prefix ) {
@@ -37,6 +39,8 @@ class GeoDir_Converter_Options_Handler {
 
 	/**
 	 * Get the full option name with the prefix.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $option The option name.
 	 * @return string The full option name with the prefix.
@@ -47,6 +51,8 @@ class GeoDir_Converter_Options_Handler {
 
 	/**
 	 * Retrieve an option value from the database.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $option  The option name.
 	 * @param mixed  $default Optional. Default value if option does not exist. Default is false.
@@ -59,6 +65,8 @@ class GeoDir_Converter_Options_Handler {
 
 	/**
 	 * Retrieve an option value from the database without cache.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $option  The option name.
 	 * @param mixed  $default Optional. Default value if option does not exist. Default is false.
@@ -84,6 +92,8 @@ class GeoDir_Converter_Options_Handler {
 	/**
 	 * Update an option value in the database.
 	 *
+	 * @since 2.0.2
+	 *
 	 * @param string $option   The option name.
 	 * @param mixed  $value    The option value.
 	 * @param string $autoload Optional. Whether to load the option when WordPress starts up. Default is 'no'.
@@ -96,6 +106,8 @@ class GeoDir_Converter_Options_Handler {
 
 	/**
 	 * Delete an option from the database.
+	 *
+	 * @since 2.0.2
 	 *
 	 * @param string $option The option name.
 	 * @return bool True if the option was successfully deleted, false otherwise.

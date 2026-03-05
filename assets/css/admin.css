@@ -5,16 +5,106 @@
  * @since 2.3.0
  */
 
- .geodir-converter-wrapper {
-	max-width: 700px;
+/* =========================================================================
+   Layout & Wrapper
+   ========================================================================= */
+
+.geodir-converter-wrapper {
+	max-width: 720px;
+}
+
+.geodir-converter-page-header {
+	padding-bottom: 8px;
+}
+
+.geodir-converter-page-header h1 {
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+/* =========================================================================
+   Card & List
+   ========================================================================= */
+
+.geodir-converter-card {
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.geodir-converter-card .card-header {
+	padding: 14px 20px;
+	border-bottom: 1px solid #e9ecef;
+}
+
+.geodir-converter-card .card-header h6 {
+	font-weight: 600;
+	font-size: 14px;
+}
+
+.geodir-converter-card .card-body {
+	padding-left: 20px;
+	padding-right: 20px;
+}
+
+/* Importer list items */
+.geodir-converter-importer {
+	transition: background-color 0.15s ease;
+	border-radius: 0;
+	padding: 14px 0 !important;
+}
+
+.geodir-converter-importer:hover {
+	background-color: #f8f9fa;
+}
+
+.geodir-converter-importer:last-child {
+	border-bottom: none !important;
+}
+
+/* Icon wrapper */
+.geodir-converter-icon-wrapper {
+	width: 48px;
+	height: 48px;
+	border-radius: 10px;
+	overflow: hidden;
+	border: 1px solid #e9ecef;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: #fff;
 }
 
 .geodir-converter-icon {
 	display: block;
-	width: 50px;
-	height: 50px;
+	width: 48px;
+	height: 48px;
 	object-fit: cover;
 }
+
+.geodir-converter-importer[data-importer="mylisting"] .geodir-converter-icon {
+	background: #6b11fe;
+	padding: 5px;
+}
+
+/* Settings panel */
+.geodir-converter-settings {
+	animation: geodirSlideDown 0.25s ease-out;
+}
+
+@keyframes geodirSlideDown {
+	from {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* =========================================================================
+   Error & Notices
+   ========================================================================= */
 
 .geodir-converter-importer-error h1 {
 	line-height: 1.4;
@@ -26,9 +116,161 @@
 	margin-bottom: 10px;
 }
 
+.geodir-converter-wrapper .alert hr {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+.geodir-converter-error {
+	border-radius: 6px;
+	font-size: 13px;
+}
+
+/* =========================================================================
+   Settings Form
+   ========================================================================= */
+
+.geodir-converter-settings-form h6.fs-base {
+	font-weight: 600;
+	font-size: 15px !important;
+	color: #1d2327;
+	margin-bottom: 16px;
+	padding-bottom: 8px;
+	border-bottom: 2px solid #e9ecef;
+}
+
+.geodir-converter-settings-form .form-group,
+.geodir-converter-settings-form .mb-3 {
+	margin-bottom: 16px !important;
+}
+
+/* Select2 full width in settings */
+.bsui .geodir-converter-settings .select2-container {
+	width: 100% !important;
+}
+
+/* Log notice items */
+.geodir-converter-logs .notice {
+	padding: 5px 12px;
+	font-size: 13px;
+	line-height: 1.5;
+	border-left-width: 4px;
+	border-left-style: solid;
+	background: #fff;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.geodir-converter-logs .notice-success {
+	border-left-color: #00a32a;
+	background-color: #f0f6e9;
+}
+
+.geodir-converter-logs .notice-warning {
+	border-left-color: #dba617;
+	background-color: #fcf9e8;
+}
+
+.geodir-converter-logs .notice-error {
+	border-left-color: #d63638;
+	background-color: #fcf0f1;
+}
+
+.geodir-converter-logs .notice-info {
+	border-left-color: #72aee6;
+	background-color: #f0f6fc;
+}
+
+/* =========================================================================
+   Progress Bar
+   ========================================================================= */
+
+.geodir-converter-progress .progress {
+	background-color: #e9ecef;
+	border-radius: 4px;
+	height: 20px;
+	overflow: hidden;
+}
+
+.geodir-converter-progress .progress-bar {
+	background: linear-gradient(135deg, #2271b1, #135e96);
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 20px;
+	transition: width 0.6s ease;
+}
+
+.geodir-converter-progress-footer {
+	font-size: 12px;
+	color: #646970;
+}
+
+.geodir-converter-stats-summary span {
+	color: #646970;
+}
+
+.geodir-converter-stats-summary strong {
+	color: #1d2327;
+}
+
+.geodir-converter-elapsed-time {
+	color: #8c8f94;
+}
+
+/* =========================================================================
+   Logs
+   ========================================================================= */
+
 .geodir-converter-logs {
 	max-height: 400px;
 	overflow-y: auto;
+}
+
+/* Scrollbar styling for logs */
+.geodir-converter-logs::-webkit-scrollbar {
+	width: 6px;
+}
+
+.geodir-converter-logs::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.geodir-converter-logs::-webkit-scrollbar-thumb {
+	background-color: #c3c4c7;
+	border-radius: 3px;
+}
+
+.geodir-converter-logs::-webkit-scrollbar-thumb:hover {
+	background-color: #8c8f94;
+}
+
+/* =========================================================================
+   Action Buttons
+   ========================================================================= */
+
+.geodir-converter-actions .btn {
+	font-weight: 500;
+	font-size: 13px;
+	padding: 6px 14px;
+	border-radius: 5px;
+	transition: all 0.15s ease;
+}
+
+.geodir-converter-actions .btn i {
+	font-size: 11px;
+}
+
+.geodir-converter-actions .btn:hover:not(:disabled) {
+	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.geodir-converter-actions .btn:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+.geodir-converter-actions .btn:disabled {
+	opacity: 0.65;
+	cursor: not-allowed;
 }
 
 /* Mapping Table */
@@ -170,54 +412,6 @@
 	border-color: transparent transparent #50575e transparent;
 	border-width: 0 4px 5px 4px;
 	margin-top: -3px;
-}
-
-.geodir-converter-mapping-table .select2-dropdown {
-	border: 1px solid #8c8f94;
-	border-radius: 3px;
-	margin-top: 2px;
-	box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.geodir-converter-mapping-table .select2-search--dropdown .select2-search__field {
-	border: 1px solid #8c8f94;
-	border-radius: 3px;
-	padding: 6px 8px;
-	font-size: 13px;
-}
-
-.geodir-converter-mapping-table .select2-search--dropdown .select2-search__field:focus {
-	border-color: #2271b1;
-	box-shadow: 0 0 0 1px #2271b1;
-	outline: 2px solid transparent;
-}
-
-.geodir-converter-mapping-table .select2-results__option {
-	padding: 7px 10px;
-	font-size: 13px;
-	line-height: 1.5;
-}
-
-.geodir-converter-mapping-table .select2-results__option--highlighted[aria-selected] {
-	background-color: #2271b1;
-	color: #fff;
-}
-
-.geodir-converter-mapping-table .select2-results__option[aria-selected="true"] {
-	background-color: #f0f6fc;
-	color: #2271b1;
-	font-weight: 500;
-}
-
-.geodir-converter-mapping-table .select2-results__option[aria-selected="true"].select2-results__option--highlighted {
-	background-color: #2271b1;
-	color: #fff;
-	font-weight: 500;
-}
-
-.geodir-converter-wrapper .alert hr {
-	margin-top: 10px;
-	margin-bottom: 10px;
 }
 
 /* Mapping Templates Section */
