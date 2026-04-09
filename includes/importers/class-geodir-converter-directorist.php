@@ -2386,7 +2386,7 @@ class GeoDir_Converter_Directorist extends GeoDir_Converter_Importer {
 		}
 
 		if ( ! empty( $args['validation_pattern'] ) ) {
-			$args['validation_pattern'] = addslashes_gpc( $args['validation_pattern'] );
+			$args['validation_pattern'] = wp_slash( $args['validation_pattern'] );
 		}
 
 		if ( isset( $args['packages'] ) ) {

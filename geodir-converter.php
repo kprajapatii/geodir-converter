@@ -11,9 +11,9 @@
  * Plugin Name:       GeoDirectory Directory Converter
  * Plugin URI:        https://wpgeodirectory.com/downloads/directory-converter/
  * Description:       Convert directories like phpMyDirectory, Listify, Vantage, Directorist, Business Directory Plugin, ListingPro, MyListing, aDirectory and WP Residence to GeoDirectory.
- * Version:           2.1.5
- * Requires at least: 5.0
- * Requires PHP:      5.6
+ * Version:           2.2.0
+ * Requires at least: 6.0
+ * Requires PHP:      7.2
  * Author:            AyeCode Ltd
  * Author URI:        https://ayecode.io
  * License:           GPLv3
@@ -33,9 +33,9 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define plugin constants.
-define( 'GEODIR_CONVERTER_VERSION', '2.1.5' );
-define( 'GEODIR_CONVERTER_MINIMUM_PHP_VERSION', '5.6' );
-define( 'GEODIR_CONVERTER_MINIMUM_WP_VERSION', '5.0' );
+define( 'GEODIR_CONVERTER_VERSION', '2.2.0' );
+define( 'GEODIR_CONVERTER_MINIMUM_PHP_VERSION', '7.2' );
+define( 'GEODIR_CONVERTER_MINIMUM_WP_VERSION', '6.0' );
 define( 'GEODIR_CONVERTER_MINIMUM_GD_VERSION', '2.3.0' );
 define( 'GEODIR_CONVERTER_PLUGIN_FILE', __FILE__ );
 define( 'GEODIR_CONVERTER_NAMESPACE', __NAMESPACE__ );
